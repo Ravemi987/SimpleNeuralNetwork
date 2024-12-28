@@ -2,51 +2,63 @@ package fr.simpleneuralnetwork.model;
 
 import fr.simpleneuralnetwork.utils.MathsOperations;
 
-import java.lang.reflect.Array;
-import java.util.Arrays;
+import java.util.Random;
 
 public class NeuralNetwork {
+    private double[][] Inputs;
+    private double[] Weights;
+    private double[] Output;
+    private double LearningRate;
+    private double IterationsNumber;
 
-    public double F(double[] Xi, double[] Wi, double b) {
-        return MathsOperations.Sigmoid(MathsOperations.Linear(Xi, Wi, b));
+    Random rand = new Random();
+
+    public NeuralNetwork(double[][] Inputs, double[] Output, double LearningRate, double IterationsNumber) {
+        this.Inputs = Inputs;
+        this.Output = Output;
+        this.LearningRate = LearningRate;
+        this.IterationsNumber = IterationsNumber;
     }
 
-    public double LocalError(double[] Xi, double[] Wi, double zi, double b) {
-        double diff = (F(Xi, Wi, b) - zi);
+    public double F(double[] X, double[] W) {
+        return MathsOperations.Sigmoid(MathsOperations.Linear(X, W));
+    }
+
+    public double LocalError(double[] X, double[] W, double z) {
+        double diff = (F(X, W) - z);
         return diff * diff;
     }
 
-    public double GlobalError(double[][] X, double[] W, double[] z, double[] b) {
+    public double GlobalError() {
         double E = 0;
-        double N = X.length;
+        double N = Inputs.length;
 
         for (int i = 0; i < N; i++) {
-            E += LocalError(X[i], W, z[i], b[i]);
+            E += LocalError(Inputs[i], Weights, Output[i]);
         }
 
         return (1.0 / N) * E;
     }
 
-    public double[] LocalGradient(double[] Xi, double[] Wi, double zi, double b) {
-        double[] grad = new double[Wi.length + 1];
-        double linearOutput = MathsOperations.Linear(Xi, Wi, b);
+    public double[] LocalGradient(double[] X, double[] W, double z) {
+        double[] grad = new double[W.length];
+        double linearOutput = MathsOperations.Linear(X, W);
         double sigmoidDerivative = MathsOperations.SigmoidDerivative(linearOutput);
 
-        for (int i = 0; i < Wi.length; i++) {
-            grad[i] = 2 * Xi[i] * sigmoidDerivative * (F(Xi, Wi, b) - zi);
+        for (int i = 0; i < W.length; i++) {
+            grad[i] = 2 * X[i] * sigmoidDerivative * (F(X, W) - z);
         }
-        grad[Wi.length] = 2 * sigmoidDerivative * (F(Xi, Wi, b) - zi);
 
         return grad;
     }
 
-    public double[] GlobalGradient(double[][] X, double[] W, double[] z, double[] b) {
-        int D = W.length + 1;
-        double N = X.length;
+    public double[] GlobalGradient() {
+        int N = Inputs.length;
+        int D = Weights.length;
         double[] global_grad = new double[D];
 
         for (int i = 0; i < N; i++) {
-            double[] local_grad = LocalGradient(X[i], W, z[i], b[i]);
+            double[] local_grad = LocalGradient(Inputs[i], Weights, Output[i]);
             for (int j = 0; j < D; j++) {
                 global_grad[j] +=  local_grad[j];
             }
@@ -59,25 +71,65 @@ public class NeuralNetwork {
         return global_grad;
     }
 
-    public double[] UpdateWeights(double[][] X, double[] W, double[] z, double[] b, double learningRate) {
-        int D = W.length + 1;
-        double[] newWeights = Arrays.copyOf(W, W.length);
-        double[] grad = GlobalGradient(X, W, z, b);
+    public void UpdateWeights() {
+        int D = Weights.length;
+        double[] grad = GlobalGradient();
 
         for (int i = 0; i < D; i++) {
-            newWeights[i] = W[i] - learningRate * grad[i];
+            Weights[i] = Weights[i] - LearningRate * grad[i];
+        }
+    }
+
+    public double[][] ReshapeInput(double[][] Inputs) {
+        int rows = Inputs.length;
+        int cols = Inputs[0].length;
+        double[][] InputWithBias = new double[rows][cols + 1];
+
+        for (int i = 0; i < rows; i++) {
+            System.arraycopy(Inputs[i], 0, InputWithBias[i], 0, cols);
+            InputWithBias[i][cols] = 1.0;
         }
 
-        b[0] -= learningRate * grad[W.length];
+        return InputWithBias;
+    }
 
-        return newWeights;
+    public void InitWeights() {
+        int N = Inputs[0].length;
+        Weights = new double[N];
+
+        for (int i  = 0; i < N; i++) {
+            Weights[i] = rand.nextDouble();
+        }
+    }
+
+    public void GradientDescent() {
+        Inputs = ReshapeInput(Inputs);
+        InitWeights();
+
+        for (int k = 0; k < IterationsNumber; k++) {
+            UpdateWeights();
+        }
+    }
+
+    public double[] Train() {
+        GradientDescent();
+        return Weights;
+    }
+
+    public double[] Predict(double[][] TestInputs) {
+        int rows = TestInputs.length;
+        double[] pred = new double[rows];
+
+        double[][] inputsWithBias = ReshapeInput(Inputs);
+
+        for (int i = 0; i < rows; i++) {
+            pred[i] = F(inputsWithBias[i], Weights);
+        }
+
+        return pred;
     }
 
     public static void main(String[] args) {
-        double[][] X = {{-1, 2}, {3, 4}};
-        double[] W = {0, 1};
-        double b = -2;
-
-        System.out.println(MathsOperations.Linear(X[0], W, b));
+        System.out.println("No execution error");
     }
 }
