@@ -54,10 +54,10 @@ public class NeuralNetwork {
     public void BackPropagation(double[] input, double[] expectedOutput) {
         double[] output = ForwardPropagation(input);
         Layer outputLayer = layers[layers.length - 1];
-        double[] computedOutputGradients = outputLayer.ComputeOutputGradients(input, output, expectedOutput);
+        double[] computedOutputGradients = outputLayer.ComputeOutputGradients(output, expectedOutput);
 
         for (int layer = layers.length - 2; layer >= 0; layer--) {
-            computedOutputGradients = layers[layer].BackPropagation(layers[layer + 1], input, computedOutputGradients);
+            computedOutputGradients = layers[layer].BackPropagation(layers[layer + 1], computedOutputGradients);
         }
     }
 
