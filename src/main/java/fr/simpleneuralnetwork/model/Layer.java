@@ -35,12 +35,33 @@ public class Layer {
         InitWeights();
     }
 
+    // Test
+    public Layer(int nbFeatures, int nbNeurons, double[][] initialWeights, double[] initialBiases) {
+        this.featuresNumber = nbFeatures;
+        this.neuronsNumber = nbNeurons;
+        this.weights = initialWeights;
+        this.biases = initialBiases;
+
+        previousActivations = new double[featuresNumber];
+        linearInputs = new double[neuronsNumber];
+        weightsGradients = new double[neuronsNumber][featuresNumber];
+        biasesGradients = new double[neuronsNumber];
+    }
+
     public double[][] getWeights() {
         return weights;
     }
 
-    public double[] getPreviousActivations() {
-        return previousActivations;
+    public double[] getBiases() {
+        return biases;
+    }
+
+    public int getFeaturesNumber() {
+        return featuresNumber;
+    }
+
+    public int getNeuronsNumber() {
+        return neuronsNumber;
     }
 
     public double Forward(double z) {
@@ -59,7 +80,6 @@ public class Layer {
         for (int neuron = 0; neuron < neuronsNumber; neuron++) {
             linearInputs[neuron] = MathsUtilities.Linear(input, weights[neuron], biases[neuron]);
             outputs[neuron] = Forward(linearInputs[neuron]);
-            previousActivations[neuron] = outputs[neuron];
         }
 
         return outputs;
@@ -84,6 +104,12 @@ public class Layer {
         return 2 * (output - expectedOutput);
     }
 
+    public void UpdateWeightsGradients(int neuron, double nextGradientValue) {
+        for (int feature = 0; feature < featuresNumber; feature++) {
+            weightsGradients[neuron][feature] += previousActivations[feature] * nextGradientValue;
+        }
+    }
+
     public double[] ComputeOutputGradients(double[] output, double[] expectedOutput) {
         double[] derivativeLossOutput = new double[output.length];
 
@@ -92,30 +118,28 @@ public class Layer {
             double forwardedDerivative = ForwardDerivative(linearInputs[neuron]);
             derivativeLossOutput[neuron] = dLoss * forwardedDerivative;
 
-            for (int feature = 0; feature < featuresNumber; feature++) {
-                weightsGradients[neuron][feature] += previousActivations[feature] * derivativeLossOutput[neuron];
-            }
+            UpdateWeightsGradients(neuron, derivativeLossOutput[neuron]);
             biasesGradients[neuron] += derivativeLossOutput[neuron];
         }
         return derivativeLossOutput;
     }
 
     public double[] BackPropagation(Layer nextLayer, double[] nextGradient) {
-        double[] currentGradient = new double[featuresNumber];
+        double[] currentGradient = new double[neuronsNumber];
 
         for (int neuron = 0; neuron < neuronsNumber; neuron++) {
             currentGradient[neuron] = 0;
             double forwardedDerivative = ForwardDerivative(linearInputs[neuron]);
 
-            for (int feature = 0; feature < featuresNumber; feature++) {
-                double connectionWeight = nextLayer.getWeights()[neuron][feature];
-                currentGradient[neuron] += connectionWeight * nextGradient[neuron];
-                weightsGradients[neuron][feature] += previousActivations[feature] * currentGradient[neuron];
+            for (int feature = 0; feature < nextGradient.length; feature++) {
+                double connectionWeight = nextLayer.getWeights()[feature][neuron];
+                currentGradient[neuron] += connectionWeight * nextGradient[feature];
             }
+            UpdateWeightsGradients(neuron, currentGradient[neuron]);
             currentGradient[neuron] *= forwardedDerivative;
             biasesGradients[neuron] += currentGradient[neuron];
         }
-        return nextGradient;
+        return currentGradient;
     }
 
     public void UpdateWeights(double learningRate, int datasetSize) {
