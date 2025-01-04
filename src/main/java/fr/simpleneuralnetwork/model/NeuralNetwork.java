@@ -87,6 +87,7 @@ public class NeuralNetwork {
             learningRate = learningRate / (1 + decay * epoch);
         }
         System.out.println("Loss " + " " + GlobalLoss(trainInputs, expectedOutputs));
+        DisplayTrainAccuracy(trainInputs, expectedOutputs);
     }
 
     public double[] Predict(double[] testInput) {
@@ -103,14 +104,14 @@ public class NeuralNetwork {
         return predictions;
     }
 
-    public int[] PredictClasses(double[][] testInputs) {
-        int[] predictions = new int[testInputs.length];
+    public double[] PredictClasses(double[][] testInputs) {
+        double[] predictions = new double[testInputs.length];
 
         for (int i = 0; i < predictions.length; i++) {
             double[] outputs = ForwardPropagation(testInputs[i]);
 
             if (outputs.length == 1) {
-                predictions[i] = outputs[0] >= 0.5 ? 0 : 1;
+                predictions[i] = outputs[0] >= 0.5 ? 0.0 : 1.0;
             } else {
                 predictions[i] = MathsUtilities.IndexMaxOfArray(outputs);
             }
@@ -119,7 +120,7 @@ public class NeuralNetwork {
         return predictions;
     }
 
-    public double GetAccuracy(int[] predictions, double[][] testLabels) {
+    public double GetAccuracy(double[] predictions, double[][] testLabels) {
         int correct = 0;
         for (int i = 0; i < predictions.length; i++) {
             if (predictions[i] == MathsUtilities.IndexMaxOfArray(testLabels[i])) {
@@ -156,6 +157,10 @@ public class NeuralNetwork {
         for (int i = 0; i < predictions.length; i++) {
             System.out.println(i + "    " + Arrays.toString(predictions[i]));
         }
+    }
+
+    public void DisplayTrainAccuracy(double[][] trainInputs, double[][] expectedOutputs) {
+        System.out.println("accuracy: " + GetAccuracy(PredictClasses(trainInputs), expectedOutputs));
     }
 
     public double Loss(double[] input, double[] expectedOutputs) {
