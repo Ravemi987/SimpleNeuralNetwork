@@ -31,7 +31,7 @@ public class XOR {
         double[] biasesLayer1 = {-3.0, 1.0};
 
         double[][] weightsLayer2 = {
-                {1.0, 1.0},
+                {1.0, 1.0}
         };
         double[] biasesLayer2 = {-1.0};
 
@@ -44,12 +44,16 @@ public class XOR {
         double[] trainOutputs = generateOutputs();
 
         NeuralNetwork nn = new NeuralNetwork(initialWeights, initialBiases, layerSizes);
+        NeuralNetwork nn2 = new NeuralNetwork(layerSizes);
 
         System.out.println("Training...");
-        nn.Train(trainInputs, trainOutputs, 1, 1000);
+        nn2.Train(trainInputs, trainOutputs, 1, 2000, 1.0E-7);
 
         System.out.println("Predicting output...");
-        System.out.println(Arrays.toString(nn.GetAllWeights()));
-        System.out.println(Arrays.toString(nn.Predict(trainInputs)));
+        System.out.println(Arrays.toString(nn2.GetAllWeights()));
+        double[][] pred = nn2.PredictProba(trainInputs);
+        nn.DisplayPredictions(pred);
+
+        System.out.println(Arrays.toString(nn2.PredictClasses(trainInputs)));
     }
 }
