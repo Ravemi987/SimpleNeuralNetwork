@@ -10,7 +10,7 @@ public class Layer {
     private final int featuresNumber;
     private final int neuronsNumber;
 
-    private final double[] previousActivations;
+    private final double[] activations;
     private final double[] linearInputs;
 
     private final double[][] weights;
@@ -23,7 +23,7 @@ public class Layer {
         this.featuresNumber = nbFeatures;
         this.neuronsNumber = nbNeurons;
 
-        previousActivations = new double[featuresNumber];
+        activations = new double[featuresNumber];
         linearInputs = new double[neuronsNumber];
 
         weights = new double[neuronsNumber][featuresNumber];
@@ -42,7 +42,7 @@ public class Layer {
         this.weights = initialWeights;
         this.biases = initialBiases;
 
-        previousActivations = new double[featuresNumber];
+        activations = new double[featuresNumber];
         linearInputs = new double[neuronsNumber];
         weightsGradients = new double[neuronsNumber][featuresNumber];
         biasesGradients = new double[neuronsNumber];
@@ -75,7 +75,7 @@ public class Layer {
     public double[] ForwardPropagation(double[] input) {
         double[] outputs = new double[neuronsNumber];
 
-        if (featuresNumber >= 0) System.arraycopy(input, 0, previousActivations, 0, featuresNumber);
+        if (featuresNumber >= 0) System.arraycopy(input, 0, activations, 0, featuresNumber);
 
         for (int neuron = 0; neuron < neuronsNumber; neuron++) {
             linearInputs[neuron] = MathsUtilities.Linear(input, weights[neuron], biases[neuron]);
@@ -106,7 +106,7 @@ public class Layer {
 
     public void UpdateWeightsGradients(int neuron, double nextGradientValue) {
         for (int feature = 0; feature < featuresNumber; feature++) {
-            weightsGradients[neuron][feature] += previousActivations[feature] * nextGradientValue;
+            weightsGradients[neuron][feature] += activations[feature] * nextGradientValue;
         }
     }
 
@@ -135,8 +135,8 @@ public class Layer {
                 double connectionWeight = nextLayer.getWeights()[feature][neuron];
                 currentGradient[neuron] += connectionWeight * nextGradient[feature];
             }
-            UpdateWeightsGradients(neuron, currentGradient[neuron]);
             currentGradient[neuron] *= forwardedDerivative;
+            UpdateWeightsGradients(neuron, currentGradient[neuron]);
             biasesGradients[neuron] += currentGradient[neuron];
         }
         return currentGradient;

@@ -71,7 +71,7 @@ public class NeuralNetwork {
 
         for (int input = 0; input < inputsNumber; input++) {
             int expectedIndex = (int) expectedOutput[input];
-            expectedOutputs[input][expectedIndex] = 1.0;
+            expectedOutputs[input][(expectedIndex + 1) % 2] = 1.0;
         }
 
         return expectedOutputs;
@@ -155,9 +155,6 @@ public class NeuralNetwork {
                 for (int feature = 0; feature < layer.getFeaturesNumber(); feature++) {
                     allWeights[index++] = layer.getWeights()[neuron][feature];
                 }
-            }
-
-            for (int neuron = 0; neuron < layer.getNeuronsNumber(); neuron++) {
                 allWeights[index++] = layer.getBiases()[neuron];
             }
         }
