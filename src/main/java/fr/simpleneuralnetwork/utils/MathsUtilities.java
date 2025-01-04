@@ -20,17 +20,6 @@ public class MathsUtilities {
         return sigmoid * (1 - sigmoid);
     }
 
-    public static double MaxOfArray(double[] arr) {
-        double max = arr[0];
-
-        for (int i = 1; i < arr.length; i++) {
-            if (arr[i] > max) {
-                max = arr[i];
-            }
-        }
-        return max;
-    }
-
     public static int IndexMaxOfArray(double[] arr) {
         int maxIndex = 0;
 
