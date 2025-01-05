@@ -4,8 +4,9 @@ public class MathsUtilities {
 
     public static double Linear(double[] X, double[] W, double b) {
         double r = 0;
+        int len = X.length; // Optimisation
 
-        for (int i = 0; i < X.length; i++) {
+        for (int i = 0; i < len; ++i) {
             r += X[i] * W[i];
         }
         return r + b;

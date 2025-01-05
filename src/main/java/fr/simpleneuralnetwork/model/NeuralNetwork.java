@@ -64,8 +64,8 @@ public class NeuralNetwork {
         UpdateAllWeights(learningRate, trainInputs.length);
 
 //        System.out.print("Loss " + " " + GlobalLoss(trainInputs, expectedOutputs) + " ");
-        DisplayTrainAccuracy(trainInputs, expectedOutputs);
-        System.out.print("\n");
+        //DisplayTrainAccuracy(trainInputs, expectedOutputs);
+        //System.out.print("\n");
     }
 
     public double[][] OneHotEncoder(double[] expectedOutput, int numClasses) {
@@ -92,9 +92,9 @@ public class NeuralNetwork {
             //learningRate = learningRate / (1 + decay * epoch);
         }
 
-        System.out.print("Loss " + " " + GlobalLoss(trainInputs, expectedOutputs) + " ");
-        DisplayTrainAccuracy(trainInputs, expectedOutputs);
-        System.out.print("\n");
+//        System.out.print("Loss " + " " + GlobalLoss(trainInputs, expectedOutputs) + " ");
+//        DisplayTrainAccuracy(trainInputs, expectedOutputs);
+//        System.out.print("\n");
     }
 
     public double[] Predict(double[] testInput) {
