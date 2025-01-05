@@ -62,6 +62,10 @@ public class NeuralNetwork {
             BackPropagation(trainInputs[input], expectedOutputs[input]);
         }
         UpdateAllWeights(learningRate, trainInputs.length);
+
+//        System.out.print("Loss " + " " + GlobalLoss(trainInputs, expectedOutputs) + " ");
+        DisplayTrainAccuracy(trainInputs, expectedOutputs);
+        System.out.print("\n");
     }
 
     public double[][] OneHotEncoder(double[] expectedOutput, int numClasses) {
@@ -78,16 +82,19 @@ public class NeuralNetwork {
 
     public void Train(double[][] trainInputs, double[] expectedOutput, double learningRate,
                       double iterationsNumber, double decay) {
-        double[][] expectedOutputs = OneHotEncoder(expectedOutput, 2);
-        DisplayExpectedOutputs(expectedOutput);
-        DisplayEncodedExpectedOutputs(expectedOutputs);
+        double[][] expectedOutputs = OneHotEncoder(expectedOutput, trainInputs[0].length);
+//        DisplayExpectedOutputs(expectedOutput);
+//        DisplayEncodedExpectedOutputs(expectedOutputs);
 
         for (int epoch = 0; epoch <= iterationsNumber; epoch++) {
             BatchGradientDescent(trainInputs, expectedOutputs, learningRate);
-            learningRate = learningRate / (1 + decay * epoch);
+            System.out.println(epoch);
+            //learningRate = learningRate / (1 + decay * epoch);
         }
-        System.out.println("Loss " + " " + GlobalLoss(trainInputs, expectedOutputs));
+
+        System.out.print("Loss " + " " + GlobalLoss(trainInputs, expectedOutputs) + " ");
         DisplayTrainAccuracy(trainInputs, expectedOutputs);
+        System.out.print("\n");
     }
 
     public double[] Predict(double[] testInput) {
@@ -159,8 +166,13 @@ public class NeuralNetwork {
         }
     }
 
-    public void DisplayTrainAccuracy(double[][] trainInputs, double[][] expectedOutputs) {
-        System.out.println("accuracy: " + GetAccuracy(PredictClasses(trainInputs), expectedOutputs));
+    public void DisplayTrainAccuracy(double[][] inputs, double[][] expectedOutputs) {
+        System.out.print("accuracy: " + GetAccuracy(PredictClasses(inputs), expectedOutputs));
+    }
+
+    public void DisplayTestAccuracy(double[][] inputs, double[] expectedOutput) {
+        double[][] expectedOutputs = OneHotEncoder(expectedOutput, inputs[0].length);
+        System.out.println("accuracy: " + GetAccuracy(PredictClasses(inputs), expectedOutputs));
     }
 
     public double Loss(double[] input, double[] expectedOutputs) {

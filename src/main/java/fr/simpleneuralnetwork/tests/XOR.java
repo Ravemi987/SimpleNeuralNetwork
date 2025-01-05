@@ -57,5 +57,6 @@ public class XOR {
         nn.DisplayPredictions(pred);
 
         System.out.println(Arrays.toString(nn2.PredictClasses(trainInputs)));
+        nn.DisplayTestAccuracy(trainInputs, trainOutputs);
     }
 }

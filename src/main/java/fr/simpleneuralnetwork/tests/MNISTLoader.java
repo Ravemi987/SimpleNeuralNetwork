@@ -1,10 +1,14 @@
 package fr.simpleneuralnetwork.tests;
 
+import fr.simpleneuralnetwork.model.NeuralNetwork;
+
 import java.io.BufferedInputStream;
 import java.io.FileInputStream;
 import java.io.IOException;
 
 public class MNISTLoader {
+
+    public static String path = "src/main/resources/MNIST/";
 
     public static int scan32BitsInteger(byte[] arr, int... indexes) {
         return ((arr[indexes[0]] & 0xFF) << 24) |
@@ -57,7 +61,7 @@ public class MNISTLoader {
         }
     }
 
-    public static byte[][] readImages(String filePath, int numberOfImages,
+    public static double[][] readImages(String filePath, int numberOfImages,
                                       int numberOfRows, int numberOfColumns) throws IOException {
         /*
         [offset] [type]          [value]          [description]
@@ -74,11 +78,12 @@ public class MNISTLoader {
             for (int i = 0; i < numberOfImages; i++) {
                 buffer.read(images[i]);
             }
-            return images;
+
+            return NormalizeImages(images);
         }
     }
 
-    public static byte[] readLabels(String filePath, int numberOfExamples) throws IOException {
+    public static double[] readLabels(String filePath, int numberOfExamples) throws IOException {
         /*
         [offset] [type]          [value]          [description]
         0008     unsigned byte   ??               label
@@ -89,15 +94,93 @@ public class MNISTLoader {
         try (BufferedInputStream bis = new BufferedInputStream(new FileInputStream(filePath))) {
             bis.skip(8);
 
-            byte[] labels = new byte[numberOfExamples];
+            double[] labels = new double[numberOfExamples];
             for (int i = 0; i < numberOfExamples; i++) {
-                labels[i] = (byte) bis.read();
+                labels[i] = bis.read();
             }
             return labels;
         }
     }
 
-    public static void main(String[] args) {
-        System.out.println("Hello World");
+    public static double[][] NormalizeImages(byte[][] images) {
+        double[][] normalizedImages = new double[images.length][images[0].length];
+        for (int i = 0; i < images.length; i++) {
+            for (int j = 0; j < images[i].length; j++) {
+                normalizedImages[i][j] = ((images[i][j] & 0xFF) / 255.0);
+            }
+        }
+        return normalizedImages;
+    }
+
+    public static double[][] getTrainData() throws IOException {
+        String filePath = path + "train-images.idx3-ubyte";
+        int[] headerInfos = readImagesHeader(filePath);
+
+        if (headerInfos != null)
+            return readImages(filePath, 1000, headerInfos[2], headerInfos[3]);
+        return null;
+    }
+
+    public static double[] getTrainLabels() throws IOException {
+        String filePath = path + "train-labels.idx1-ubyte";
+        int[] headerInfos = readLabelsHeader(filePath);
+
+        if (headerInfos != null)
+            return readLabels(filePath, 1000);
+        return null;
+    }
+
+    public static double[][] getTestData() throws IOException {
+        String filePath = path + "t10k-images.idx3-ubyte";
+        int[] headerInfos = readImagesHeader(filePath);
+
+        if (headerInfos != null)
+            return readImages(filePath, 1000, headerInfos[2], headerInfos[3]);
+        return null;
+    }
+
+    public static double[] getTestLabels() throws IOException {
+        String filePath = path + "t10k-labels.idx1-ubyte";
+        int[] headerInfos = readLabelsHeader(filePath);
+
+        if (headerInfos != null)
+            return readLabels(filePath, 1000);
+        return null;
+    }
+
+    public static void DisplayImage(double[] image) {
+        int imageSize = (int) Math.sqrt(image.length);
+
+        for (int i = 0; i < imageSize; i++) {
+            for (int j = 0; j < imageSize; j++) {
+                double pixel = image[i * imageSize + j];
+                System.out.print(pixel > 0 ? "# " : "." + " ");
+            }
+            System.out.print("\n");
+        }
+    }
+
+    public static void main(String[] args) throws IOException {
+        double[][] trainData = getTrainData();
+        double[] trainLabels = getTrainLabels();
+        double[][] testData = getTestData();
+        double[] testLabels = getTestLabels();
+
+        if (trainData == null || trainLabels == null || testData == null || testLabels == null) {
+            return;
+        }
+
+        System.out.println("trainData: length=" + trainData.length + " features=" + trainData[0].length);
+        System.out.println("testData: length=" + testData.length + " features=" + testData[0].length);
+        System.out.println("trainLabels: length=" + trainLabels.length);
+        System.out.println("testLabels: length=" + testLabels.length);
+
+        DisplayImage(trainData[0]);
+
+        int[] layerSizes = new int[]{784, 128, 64, 10};
+
+        NeuralNetwork nn = new NeuralNetwork(layerSizes);
+        nn.Train(trainData, trainLabels, 1, 100, 1.0E-10);
+        nn.DisplayTestAccuracy(testData, testLabels);
     }
 }
