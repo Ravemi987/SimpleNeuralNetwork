@@ -2,9 +2,10 @@ package fr.simpleneuralnetwork.utils;
 
 public class MathsUtilities {
 
+    // Old method (too slow)
     public static double Linear(double[] X, double[] W, double b) {
         double r = 0;
-        int len = X.length; // Optimisation
+        int len = X.length;
 
         for (int i = 0; i < len; ++i) {
             r += X[i] * W[i];
@@ -30,5 +31,13 @@ public class MathsUtilities {
             }
         }
         return maxIndex;
+    }
+
+    public static double[][] MatrixMultiply(double[][] X, double[][] W) {
+        return null;
+    }
+
+    public static double[][] MatrixAddConstant(double[][] Z, double[] b) {
+        return null;
     }
 }

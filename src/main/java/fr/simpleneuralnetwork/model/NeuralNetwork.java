@@ -34,20 +34,30 @@ public class NeuralNetwork {
         }
     }
 
-    public double[] ForwardPropagation(double[] input) {
+    public double[] NNForwardPropagation(double[] input) {
+        double[] activations = input;
+
         for (Layer layer: layers) {
-            input = layer.ForwardPropagation(input);
+            activations = layer.ForwardPropagation(activations);
         }
-        return input;
+        return activations;
     }
 
-    public void BackPropagation(double[] input, double[] expectedOutput) {
-        double[] output = ForwardPropagation(input);
+    public double[][] NNForwardPropagationBatch(double[][] inputs) {
+        double[][] activations = inputs;
+
+        for (Layer layer: layers) {
+            activations = layer.ForwardPropagationBatch(activations);
+        }
+        return activations;
+    }
+
+    public void BackPropagation(double[][] outputs, double[][] expectedOutputs) {
         Layer outputLayer = layers[layers.length - 1];
-        double[] computedOutputGradients = outputLayer.ComputeOutputGradients(output, expectedOutput);
+        double[][] computedOutputGradients = outputLayer.ComputeOutputGradientsBatch(outputs, expectedOutputs);
 
         for (int layer = layers.length - 2; layer >= 0; layer--) {
-            computedOutputGradients = layers[layer].BackPropagation(layers[layer + 1], computedOutputGradients);
+            computedOutputGradients = layers[layer].BackPropagationBatch(layers[layer + 1], computedOutputGradients);
         }
     }
 
@@ -57,15 +67,43 @@ public class NeuralNetwork {
         }
     }
 
-    public void BatchGradientDescent(double[][] trainInputs, double[][] expectedOutputs, double learningRate) {
-        for (int input = 0; input < trainInputs.length; input++) {
-            BackPropagation(trainInputs[input], expectedOutputs[input]);
+    public void BatchGradientDescent(double[][] trainInputs, double[][] expectedOutputs,
+                                     double learningRate, int batchSize) {
+        int totalSize = trainInputs.length;
+        int batchesNumber = (int) Math.ceil((double) totalSize / batchSize);
+        double totalLoss = 0;
+        int totalCorrect = 0;
+
+        for (int batch = 0; batch < batchesNumber; batch++) {
+            int start = batch * batchSize;
+            int end = Math.min(start + batchSize, totalSize);
+
+            double[][] batchInputs = Arrays.copyOfRange(trainInputs, start, end);
+            double[][] batchOutputs = Arrays.copyOfRange(expectedOutputs, start, end);
+            double[][] outputs = NNForwardPropagationBatch(batchInputs);
+
+            BackPropagation(outputs, batchOutputs);
+
+            totalLoss += GlobalLoss(outputs, batchOutputs);
+            totalCorrect += GetCorrectPredictions(outputs, batchOutputs);
         }
+
         UpdateAllWeights(learningRate, trainInputs.length);
 
-//        System.out.print("Loss " + " " + GlobalLoss(trainInputs, expectedOutputs) + " ");
-        //DisplayTrainAccuracy(trainInputs, expectedOutputs);
-        //System.out.print("\n");
+        double averageLoss = totalLoss / trainInputs.length;
+        double accuracy = (double) totalCorrect / trainInputs.length;
+        System.out.printf("Loss: %.6f - Accuracy: %.2f%%%n", averageLoss, accuracy * 100);
+    }
+
+    public void Train(double[][] trainInputs, double[] expectedOutput, double learningRate,
+                      double iterationsNumber, int batchSize, double decay) {
+        double[][] expectedOutputs = OneHotEncoder(expectedOutput, trainInputs[0].length);
+
+        for (int epoch = 0; epoch <= iterationsNumber; epoch++) {
+            System.out.print("Epoch " + epoch + " - ");
+            BatchGradientDescent(trainInputs, expectedOutputs, learningRate, batchSize);
+            learningRate = learningRate / (1 + decay * epoch);
+        }
     }
 
     public double[][] OneHotEncoder(double[] expectedOutput, int numClasses) {
@@ -80,42 +118,68 @@ public class NeuralNetwork {
         return encodedOutputs;
     }
 
-    public void Train(double[][] trainInputs, double[] expectedOutput, double learningRate,
-                      double iterationsNumber, double decay) {
-        double[][] expectedOutputs = OneHotEncoder(expectedOutput, trainInputs[0].length);
-//        DisplayExpectedOutputs(expectedOutput);
-//        DisplayEncodedExpectedOutputs(expectedOutputs);
+    public double GlobalLoss(double[][] outputs, double[][] expectedOutputs) {
+        double totalError = 0;
 
-        for (int epoch = 0; epoch <= iterationsNumber; epoch++) {
-            BatchGradientDescent(trainInputs, expectedOutputs, learningRate);
-            System.out.println(epoch);
-            //learningRate = learningRate / (1 + decay * epoch);
+        for (int i = 0; i < outputs.length; i++) {
+            totalError += Loss(outputs[i], expectedOutputs[i]);
         }
 
-//        System.out.print("Loss " + " " + GlobalLoss(trainInputs, expectedOutputs) + " ");
-//        DisplayTrainAccuracy(trainInputs, expectedOutputs);
-//        System.out.print("\n");
+        return totalError;
+    }
+
+    public double Loss(double[] output, double[] expectedOutputs) {
+        double error = 0;
+        Layer outputLayer = layers[layers.length - 1];
+
+        for (int numOutput = 0; numOutput < output.length; numOutput++) {
+            error += outputLayer.NeuronLoss(output[numOutput], expectedOutputs[numOutput]);
+        }
+
+        return error;
+    }
+
+    public int GetCorrectPredictions(double[][] predictions, double[][] expectedOutputs) {
+        int correct = 0;
+        for (int i = 0; i < predictions.length; i++) {
+            int predictedClass = MathsUtilities.IndexMaxOfArray(predictions[i]);
+            int expectedClass = MathsUtilities.IndexMaxOfArray(expectedOutputs[i]);
+
+            if (predictedClass == expectedClass ) {
+                correct++;
+            }
+        }
+        return correct;
     }
 
     public double[] Predict(double[] testInput) {
-        return ForwardPropagation(testInput);
+        return NNForwardPropagation(testInput);
     }
 
-    public double[][] PredictProba(double[][] testInputs) {
+    public double[][] PredictAll(double[][] testInputs) {
         double[][] predictions = new double[testInputs.length][];
 
         for (int i = 0; i < predictions.length; i++) {
-            predictions[i] = ForwardPropagation(testInputs[i]);
+            predictions[i] = NNForwardPropagation(testInputs[i]);
         }
 
         return predictions;
     }
 
-    public double[] PredictClasses(double[][] testInputs) {
+    public double PredictClass(double[] testInput) {
+        double[] outputs = NNForwardPropagation(testInput);
+        if (outputs.length == 1) {
+            return outputs[0] >= 0.5 ? 0.0 : 1.0;
+        } else {
+            return MathsUtilities.IndexMaxOfArray(outputs);
+        }
+    }
+
+    public double[] PredictAllClasses(double[][] testInputs) {
         double[] predictions = new double[testInputs.length];
 
         for (int i = 0; i < predictions.length; i++) {
-            double[] outputs = ForwardPropagation(testInputs[i]);
+            double[] outputs = NNForwardPropagation(testInputs[i]);
 
             if (outputs.length == 1) {
                 predictions[i] = outputs[0] >= 0.5 ? 0.0 : 1.0;
@@ -125,16 +189,6 @@ public class NeuralNetwork {
         }
 
         return predictions;
-    }
-
-    public double GetAccuracy(double[] predictions, double[][] testLabels) {
-        int correct = 0;
-        for (int i = 0; i < predictions.length; i++) {
-            if (predictions[i] == MathsUtilities.IndexMaxOfArray(testLabels[i])) {
-                correct++;
-            }
-        }
-        return (double) correct / predictions.length;
     }
 
     public static double ActivationFunction(double z) {
@@ -166,35 +220,10 @@ public class NeuralNetwork {
         }
     }
 
-    public void DisplayTrainAccuracy(double[][] inputs, double[][] expectedOutputs) {
-        System.out.print("accuracy: " + GetAccuracy(PredictClasses(inputs), expectedOutputs));
-    }
-
     public void DisplayTestAccuracy(double[][] inputs, double[] expectedOutput) {
         double[][] expectedOutputs = OneHotEncoder(expectedOutput, inputs[0].length);
-        System.out.println("accuracy: " + GetAccuracy(PredictClasses(inputs), expectedOutputs));
-    }
-
-    public double Loss(double[] input, double[] expectedOutputs) {
-        double error = 0;
-        double[] outputs = ForwardPropagation(input);
-        Layer outputLayer = layers[layers.length - 1];
-
-        for (int numOutput = 0; numOutput < outputs.length; numOutput++) {
-            error += outputLayer.NeuronLoss(outputs[numOutput], expectedOutputs[numOutput]);
-        }
-
-        return error;
-    }
-
-    public double GlobalLoss(double[][] inputs, double[][] expectedOutputs) {
-        double totalError = 0;
-
-        for (int i = 0; i < inputs.length; i++) {
-            totalError += Loss(inputs[i], expectedOutputs[i]);
-        }
-
-        return (1.0 / inputs.length) * totalError;
+        double[][] predictions = OneHotEncoder(PredictAllClasses(inputs), inputs[0].length);
+        System.out.println("Accuracy: " + GetCorrectPredictions(predictions, expectedOutputs) / (double) expectedOutput.length);
     }
 
     public int getWeightsNumber() {

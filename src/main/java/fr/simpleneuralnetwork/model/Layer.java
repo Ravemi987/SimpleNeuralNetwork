@@ -10,8 +10,8 @@ public class Layer {
     private final int featuresNumber;
     private final int neuronsNumber;
 
-    private final double[] activations;
-    private final double[] linearInputs;
+    private double[][] activations;
+    private double[][] linearInputs;
 
     private final double[][] weights;
     private final double[] biases;
@@ -22,9 +22,6 @@ public class Layer {
     public Layer(int nbFeatures, int nbNeurons) {
         this.featuresNumber = nbFeatures;
         this.neuronsNumber = nbNeurons;
-
-        activations = new double[featuresNumber];
-        linearInputs = new double[neuronsNumber];
 
         weights = new double[neuronsNumber][featuresNumber];
         biases = new double[neuronsNumber];
@@ -42,8 +39,6 @@ public class Layer {
         this.weights = initialWeights;
         this.biases = initialBiases;
 
-        activations = new double[featuresNumber];
-        linearInputs = new double[neuronsNumber];
         weightsGradients = new double[neuronsNumber][featuresNumber];
         biasesGradients = new double[neuronsNumber];
     }
@@ -73,16 +68,38 @@ public class Layer {
     }
 
     public double[] ForwardPropagation(double[] input) {
-        double[] outputs = new double[neuronsNumber];
-
-        if (featuresNumber >= 0) System.arraycopy(input, 0, activations, 0, featuresNumber);
+        double[] output = new double[neuronsNumber];
 
         for (int neuron = 0; neuron < neuronsNumber; neuron++) {
-            linearInputs[neuron] = MathsUtilities.Linear(input, weights[neuron], biases[neuron]);
-            outputs[neuron] = Forward(linearInputs[neuron]);
+            output[neuron] = MathsUtilities.Linear(input, weights[neuron], biases[neuron]);
+            output[neuron] = Forward(output[neuron]);
         }
+        return output;
+    }
 
+    public double[][] ForwardPropagationBatch(double[][] inputs) {
+        int batchSize = inputs.length;
+
+        this.activations = new double[batchSize][featuresNumber];
+        this.linearInputs = new double[batchSize][neuronsNumber];
+        double[][] outputs = new double[batchSize][neuronsNumber];
+
+        SaveActivations(inputs, batchSize);
+
+        for (int i = 0; i < batchSize; i++) {
+            for (int neuron = 0; neuron < neuronsNumber; neuron++) {
+                linearInputs[i][neuron] = MathsUtilities.Linear(inputs[i], weights[neuron], biases[neuron]);
+                outputs[i][neuron] = Forward(linearInputs[i][neuron]);
+            }
+
+        }
         return outputs;
+    }
+
+    public void SaveActivations(double[][] inputs, int batchSize) {
+        for (int i = 0; i < batchSize; i++) {
+            System.arraycopy(inputs[i], 0, activations[i], 0, featuresNumber);
+        }
     }
 
     public void InitWeights() {
@@ -104,39 +121,59 @@ public class Layer {
         return 2 * (output - expectedOutput);
     }
 
-    public void UpdateWeightsGradients(int neuron, double nextGradientValue) {
+    public void UpdateWeightsGradients(int neuron, double nextGradientValue, int batchIndex) {
         for (int feature = 0; feature < featuresNumber; feature++) {
-            weightsGradients[neuron][feature] += activations[feature] * nextGradientValue;
+            weightsGradients[neuron][feature] += activations[batchIndex][feature] * nextGradientValue;
         }
     }
 
-    public double[] ComputeOutputGradients(double[] output, double[] expectedOutput) {
-        double[] derivativeLossOutput = new double[output.length];
+    public double[][] ComputeOutputGradientsBatch(double[][] outputs, double[][] expectedOutputs) {
+        int batchSize = outputs.length;
+        double[][] gradients = new double[batchSize][neuronsNumber];
+
+        for (int i = 0; i < batchSize; i++) {
+            gradients[i] = ComputeOutputGradients(outputs, expectedOutputs, i);
+        }
+        return  gradients;
+    }
+
+    public double[] ComputeOutputGradients(double[][] outputs, double[][] expectedOutputs, int batchIndex) {
+        double[] derivativeLossOutput = new double[outputs.length];
 
         for (int neuron = 0; neuron < neuronsNumber; neuron++) {
-            double dLoss = LossDerivative(output[neuron], expectedOutput[neuron]);
-            double forwardedDerivative = ForwardDerivative(linearInputs[neuron]);
+            double dLoss = LossDerivative(outputs[batchIndex][neuron], expectedOutputs[batchIndex][neuron]);
+            double forwardedDerivative = ForwardDerivative(linearInputs[batchIndex][neuron]);
             derivativeLossOutput[neuron] = dLoss * forwardedDerivative;
 
-            UpdateWeightsGradients(neuron, derivativeLossOutput[neuron]);
+            UpdateWeightsGradients(neuron, derivativeLossOutput[neuron], batchIndex);
             biasesGradients[neuron] += derivativeLossOutput[neuron];
         }
         return derivativeLossOutput;
     }
 
-    public double[] BackPropagation(Layer nextLayer, double[] nextGradient) {
+    public double[][] BackPropagationBatch(Layer nextLayer, double[][] nextGradients) {
+        int batchSize = nextGradients.length;
+        double[][] gradients = new double[batchSize][neuronsNumber];
+
+        for (int i = 0; i < batchSize; i++) {
+            gradients[i] = BackPropagation(nextLayer, nextGradients, i);
+        }
+        return gradients;
+    }
+
+    public double[] BackPropagation(Layer nextLayer, double[][] nextGradients, int batchIndex) {
         double[] currentGradient = new double[neuronsNumber];
 
         for (int neuron = 0; neuron < neuronsNumber; neuron++) {
             currentGradient[neuron] = 0;
-            double forwardedDerivative = ForwardDerivative(linearInputs[neuron]);
+            double forwardedDerivative = ForwardDerivative(linearInputs[batchIndex][neuron]);
 
-            for (int feature = 0; feature < nextGradient.length; feature++) {
+            for (int feature = 0; feature < nextLayer.getNeuronsNumber(); feature++) {
                 double connectionWeight = nextLayer.getWeights()[feature][neuron];
-                currentGradient[neuron] += connectionWeight * nextGradient[feature];
+                currentGradient[neuron] += connectionWeight * nextGradients[batchIndex][feature];
             }
             currentGradient[neuron] *= forwardedDerivative;
-            UpdateWeightsGradients(neuron, currentGradient[neuron]);
+            UpdateWeightsGradients(neuron, currentGradient[neuron], batchIndex);
             biasesGradients[neuron] += currentGradient[neuron];
         }
         return currentGradient;

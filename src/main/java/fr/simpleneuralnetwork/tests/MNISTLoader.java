@@ -180,7 +180,7 @@ public class MNISTLoader {
         int[] layerSizes = new int[]{784, 128, 64, 10};
 
         NeuralNetwork nn = new NeuralNetwork(layerSizes);
-        nn.Train(trainData, trainLabels, 1, 100, 1.0E-10);
+        nn.Train(trainData, trainLabels, 1, 100, 512, 1.0E-6);
         nn.DisplayTestAccuracy(testData, testLabels);
     }
 }
