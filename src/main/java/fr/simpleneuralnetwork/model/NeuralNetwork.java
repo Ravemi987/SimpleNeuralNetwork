@@ -98,13 +98,12 @@ public class NeuralNetwork {
     public void Train(double[][] trainInputs, double[] expectedOutput, double learningRate,
                       double iterationsNumber, int batchSize, double decay) {
         double[][] expectedOutputs = OneHotEncoder(expectedOutput, trainInputs[0].length);
-        //double initialLr = learningRate;
+        double initialLr = learningRate;
 
         for (int epoch = 0; epoch <= iterationsNumber; epoch++) {
             System.out.print("Epoch " + epoch + " - ");
             BatchGradientDescent(trainInputs, expectedOutputs, learningRate, batchSize);
-            //learningRate = initialLr / (1 + decay * epoch);
-            //learningRate = initialLr * Math.pow(decay, epoch);
+            learningRate = initialLr / (1 + decay * epoch);
         }
     }
 
