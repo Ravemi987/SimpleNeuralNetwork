@@ -98,11 +98,13 @@ public class NeuralNetwork {
     public void Train(double[][] trainInputs, double[] expectedOutput, double learningRate,
                       double iterationsNumber, int batchSize, double decay) {
         double[][] expectedOutputs = OneHotEncoder(expectedOutput, trainInputs[0].length);
+        //double initialLr = learningRate;
 
         for (int epoch = 0; epoch <= iterationsNumber; epoch++) {
             System.out.print("Epoch " + epoch + " - ");
             BatchGradientDescent(trainInputs, expectedOutputs, learningRate, batchSize);
-            learningRate = learningRate / (1 + decay * epoch);
+            //learningRate = initialLr / (1 + decay * epoch);
+            //learningRate = initialLr * Math.pow(decay, epoch);
         }
     }
 
@@ -224,6 +226,17 @@ public class NeuralNetwork {
         double[][] expectedOutputs = OneHotEncoder(expectedOutput, inputs[0].length);
         double[][] predictions = OneHotEncoder(PredictAllClasses(inputs), inputs[0].length);
         System.out.println("Accuracy: " + GetCorrectPredictions(predictions, expectedOutputs) / (double) expectedOutput.length);
+    }
+
+    public void CompareForwardMethods(double[] input) {
+        double[] oldMethod = layers[0].ForwardPropagation(input);
+        double[][] batchInput = {input};
+        double[][] batchMethod = layers[0].ForwardPropagationBatch(batchInput);
+
+        System.out.println("Old Method: " + Arrays.toString(oldMethod));
+        System.out.println("Batch Method: " + Arrays.toString(batchMethod[0]));
+
+        assert Arrays.equals(oldMethod, batchMethod[0]) : "Les sorties des deux méthodes ne correspondent pas.";
     }
 
     public int getWeightsNumber() {

@@ -177,10 +177,12 @@ public class MNISTLoader {
 
         DisplayImage(trainData[0]);
 
-        int[] layerSizes = new int[]{784, 128, 64, 10};
+        int[] layerSizes = new int[]{784, 100, 10};
 
         NeuralNetwork nn = new NeuralNetwork(layerSizes);
-        nn.Train(trainData, trainLabels, 1, 100, 512, 1.0E-6);
+        nn.Train(trainData, trainLabels, 1, 100, 512, 0.075);
         nn.DisplayTestAccuracy(testData, testLabels);
+
+        System.out.println(nn.PredictClass(trainData[0]));
     }
 }

@@ -82,18 +82,12 @@ public class Layer {
 
         this.activations = new double[batchSize][featuresNumber];
         this.linearInputs = new double[batchSize][neuronsNumber];
-        double[][] outputs = new double[batchSize][neuronsNumber];
 
         SaveActivations(inputs, batchSize);
 
-        for (int i = 0; i < batchSize; i++) {
-            for (int neuron = 0; neuron < neuronsNumber; neuron++) {
-                linearInputs[i][neuron] = MathsUtilities.Linear(inputs[i], weights[neuron], biases[neuron]);
-                outputs[i][neuron] = Forward(linearInputs[i][neuron]);
-            }
-
-        }
-        return outputs;
+        double[][] prod = MathsUtilities.MatrixTransposeMultiply(inputs, weights);
+        linearInputs = MathsUtilities.MatrixAdd(prod, biases);
+        return MathsUtilities.ApplyActivation(linearInputs, this::Forward);
     }
 
     public void SaveActivations(double[][] inputs, int batchSize) {
@@ -138,7 +132,7 @@ public class Layer {
     }
 
     public double[] ComputeOutputGradients(double[][] outputs, double[][] expectedOutputs, int batchIndex) {
-        double[] derivativeLossOutput = new double[outputs.length];
+        double[] derivativeLossOutput = new double[outputs[0].length];
 
         for (int neuron = 0; neuron < neuronsNumber; neuron++) {
             double dLoss = LossDerivative(outputs[batchIndex][neuron], expectedOutputs[batchIndex][neuron]);
