@@ -38,13 +38,14 @@ public class MathsUtilities {
     public static double[][] ApplyActivation(double[][] Z, Function<Double, Double> function) {
         int rows = Z.length;
         int cols = Z[0].length;
+        double[][] A = new double[rows][cols];
 
         for (int i = 0; i < rows; i++) {
             for (int j = 0; j < cols; j++) {
-                Z[i][j] = function.apply(Z[i][j]);
+                A[i][j] = function.apply(Z[i][j]);
             }
         }
-        return Z;
+        return A;
     }
 
 }

@@ -228,17 +228,6 @@ public class NeuralNetwork {
         System.out.println("Accuracy: " + GetCorrectPredictions(predictions, expectedOutputs) / (double) expectedOutput.length);
     }
 
-    public void CompareForwardMethods(double[] input) {
-        double[] oldMethod = layers[0].ForwardPropagation(input);
-        double[][] batchInput = {input};
-        double[][] batchMethod = layers[0].ForwardPropagationBatch(batchInput);
-
-        System.out.println("Old Method: " + Arrays.toString(oldMethod));
-        System.out.println("Batch Method: " + Arrays.toString(batchMethod[0]));
-
-        assert Arrays.equals(oldMethod, batchMethod[0]) : "Les sorties des deux méthodes ne correspondent pas.";
-    }
-
     public int getWeightsNumber() {
         int weightsNumber = 0;
 

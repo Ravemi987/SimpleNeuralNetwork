@@ -5,6 +5,7 @@ import fr.simpleneuralnetwork.model.NeuralNetwork;
 import java.io.BufferedInputStream;
 import java.io.FileInputStream;
 import java.io.IOException;
+import java.util.Arrays;
 
 public class MNISTLoader {
 
@@ -180,7 +181,7 @@ public class MNISTLoader {
         int[] layerSizes = new int[]{784, 100, 10};
 
         NeuralNetwork nn = new NeuralNetwork(layerSizes);
-        nn.Train(trainData, trainLabels, 1, 100, 512, 0.075);
+        nn.Train(trainData, trainLabels, 1, 200, 1000, 0.075);
         nn.DisplayTestAccuracy(testData, testLabels);
 
         System.out.println(nn.PredictClass(trainData[0]));

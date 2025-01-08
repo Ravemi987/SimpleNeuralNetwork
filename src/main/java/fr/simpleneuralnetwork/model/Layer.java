@@ -2,6 +2,8 @@ package fr.simpleneuralnetwork.model;
 
 import org.ejml.simple.SimpleMatrix;
 import fr.simpleneuralnetwork.utils.MathsUtilities;
+
+import java.util.Arrays;
 import java.util.Random;
 
 public class Layer {
@@ -85,6 +87,7 @@ public class Layer {
 
         SaveActivations(inputs, batchSize);
         ComputeMatrixOperations(inputs, batchSize);
+
 
         return MathsUtilities.ApplyActivation(linearInputs, this::Forward);
     }
