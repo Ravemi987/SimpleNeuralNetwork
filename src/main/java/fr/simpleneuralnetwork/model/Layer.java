@@ -77,31 +77,6 @@ public class Layer {
         return output;
     }
 
-//    public double[][] ForwardPropagationBatch(double[][] inputs) {
-//        int batchSize = inputs.length;
-//
-//        this.activations = new double[batchSize][featuresNumber];
-//        this.linearInputs = new double[batchSize][neuronsNumber];
-//
-//        SaveActivations(inputs, batchSize);
-//
-//        SimpleMatrix inputMatrix = new SimpleMatrix(inputs);
-//        SimpleMatrix weightMatrix = new SimpleMatrix(weights).transpose();
-//        SimpleMatrix biasMatrix = new SimpleMatrix(1, biases.length, true, biases);
-//
-//        SimpleMatrix extendedBiasMatrix = new SimpleMatrix(batchSize, biases.length);
-//        for (int i = 0; i < batchSize; i++) {
-//            extendedBiasMatrix.insertIntoThis(i, 0, biasMatrix);
-//        }
-//
-//        SimpleMatrix prodMatrix = inputMatrix.mult(weightMatrix);
-//        SimpleMatrix linearInputMatrix = prodMatrix.plus(extendedBiasMatrix);
-//
-//        this.linearInputs = linearInputMatrix.getDDRM().get2DData();
-//
-//        return MathsUtilities.ApplyActivation(linearInputs, this::Forward);
-//    }
-
     public double[][] ForwardPropagationBatch(double[][] inputs) {
         int batchSize = inputs.length;
 
@@ -109,7 +84,18 @@ public class Layer {
         this.linearInputs = new double[batchSize][neuronsNumber];
 
         SaveActivations(inputs, batchSize);
+        ComputeMatrixOperations(inputs, batchSize);
 
+        return MathsUtilities.ApplyActivation(linearInputs, this::Forward);
+    }
+
+    public void SaveActivations(double[][] inputs, int batchSize) {
+        for (int i = 0; i < batchSize; i++) {
+            System.arraycopy(inputs[i], 0, activations[i], 0, featuresNumber);
+        }
+    }
+
+    public void ComputeMatrixOperations(double[][] inputs, int batchSize) {
         SimpleMatrix inputMatrix = new SimpleMatrix(inputs);
         SimpleMatrix weightMatrix = new SimpleMatrix(weights).transpose();
         SimpleMatrix biasMatrix = new SimpleMatrix(1, biases.length, true, biases);
@@ -123,14 +109,6 @@ public class Layer {
         SimpleMatrix linearInputMatrix = prodMatrix.plus(extendedBiasMatrix);
 
         this.linearInputs = linearInputMatrix.getDDRM().get2DData();
-
-        return MathsUtilities.ApplyActivation(linearInputs, this::Forward);
-    }
-
-    public void SaveActivations(double[][] inputs, int batchSize) {
-        for (int i = 0; i < batchSize; i++) {
-            System.arraycopy(inputs[i], 0, activations[i], 0, featuresNumber);
-        }
     }
 
     public void InitWeights() {
