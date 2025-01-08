@@ -1,7 +1,7 @@
 package fr.simpleneuralnetwork.model;
 
+import org.ejml.simple.SimpleMatrix;
 import fr.simpleneuralnetwork.utils.MathsUtilities;
-
 import java.util.Random;
 
 public class Layer {
@@ -77,6 +77,31 @@ public class Layer {
         return output;
     }
 
+//    public double[][] ForwardPropagationBatch(double[][] inputs) {
+//        int batchSize = inputs.length;
+//
+//        this.activations = new double[batchSize][featuresNumber];
+//        this.linearInputs = new double[batchSize][neuronsNumber];
+//
+//        SaveActivations(inputs, batchSize);
+//
+//        SimpleMatrix inputMatrix = new SimpleMatrix(inputs);
+//        SimpleMatrix weightMatrix = new SimpleMatrix(weights).transpose();
+//        SimpleMatrix biasMatrix = new SimpleMatrix(1, biases.length, true, biases);
+//
+//        SimpleMatrix extendedBiasMatrix = new SimpleMatrix(batchSize, biases.length);
+//        for (int i = 0; i < batchSize; i++) {
+//            extendedBiasMatrix.insertIntoThis(i, 0, biasMatrix);
+//        }
+//
+//        SimpleMatrix prodMatrix = inputMatrix.mult(weightMatrix);
+//        SimpleMatrix linearInputMatrix = prodMatrix.plus(extendedBiasMatrix);
+//
+//        this.linearInputs = linearInputMatrix.getDDRM().get2DData();
+//
+//        return MathsUtilities.ApplyActivation(linearInputs, this::Forward);
+//    }
+
     public double[][] ForwardPropagationBatch(double[][] inputs) {
         int batchSize = inputs.length;
 
@@ -85,8 +110,20 @@ public class Layer {
 
         SaveActivations(inputs, batchSize);
 
-        double[][] prod = MathsUtilities.MatrixTransposeMultiply(inputs, weights);
-        linearInputs = MathsUtilities.MatrixAdd(prod, biases);
+        SimpleMatrix inputMatrix = new SimpleMatrix(inputs);
+        SimpleMatrix weightMatrix = new SimpleMatrix(weights).transpose();
+        SimpleMatrix biasMatrix = new SimpleMatrix(1, biases.length, true, biases);
+
+        SimpleMatrix extendedBiasMatrix = new SimpleMatrix(batchSize, biases.length);
+        for (int i = 0; i < batchSize; i++) {
+            extendedBiasMatrix.insertIntoThis(i, 0, biasMatrix);
+        }
+
+        SimpleMatrix prodMatrix = inputMatrix.mult(weightMatrix);
+        SimpleMatrix linearInputMatrix = prodMatrix.plus(extendedBiasMatrix);
+
+        this.linearInputs = linearInputMatrix.getDDRM().get2DData();
+
         return MathsUtilities.ApplyActivation(linearInputs, this::Forward);
     }
 

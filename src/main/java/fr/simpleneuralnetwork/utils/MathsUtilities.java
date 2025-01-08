@@ -35,35 +35,6 @@ public class MathsUtilities {
         return maxIndex;
     }
 
-    public static double[][] MatrixTransposeMultiply(double[][] X, double[][] W) {
-        int m = X.length;
-        int n = X[0].length;
-        int p = W.length;
-
-        double[][] Y = new double[m][p];
-
-        for (int i = 0; i < m; i++) {
-            for (int j = 0; j < p; j++) {
-                for (int k = 0; k < n; k++) {
-                    Y[i][j] += X[i][k] * W[j][k];
-                }
-            }
-        }
-        return Y;
-    }
-
-    public static double[][] MatrixAdd(double[][] Y, double[] b) {
-        int rows = Y.length;
-        int cols = Y[0].length;
-
-        for (int i = 0; i < rows; i++) {
-            for (int j = 0; j < cols; j++) {
-                Y[i][j] += b[j];
-            }
-        }
-        return Y;
-    }
-
     public static double[][] ApplyActivation(double[][] Z, Function<Double, Double> function) {
         int rows = Z.length;
         int cols = Z[0].length;
