@@ -87,10 +87,10 @@ public class Layer {
 
     public void InitWeights() {
         for (int neuron = 0; neuron < neuronsNumber; neuron++) {
-            biases[neuron] = rand.nextDouble();
+            biases[neuron] = rand.nextDouble() * 2 - 1;
 
             for (int feature = 0; feature < featuresNumber; feature++) {
-                weights[neuron][feature] = rand.nextDouble();
+                weights[neuron][feature] = rand.nextDouble() * 2 - 1;
             }
         }
     }

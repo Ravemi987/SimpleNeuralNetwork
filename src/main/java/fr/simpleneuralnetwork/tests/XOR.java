@@ -1,4 +1,6 @@
-package fr.simpleneuralnetwork.model;
+package fr.simpleneuralnetwork.tests;
+
+import fr.simpleneuralnetwork.model.NeuralNetwork;
 
 import java.util.Arrays;
 
@@ -47,7 +49,7 @@ public class XOR {
         NeuralNetwork nn2 = new NeuralNetwork(layerSizes);
 
         System.out.println("Training...");
-        nn2.Train(trainInputs, trainOutputs, 1, 2000, 1.0E-7);
+        nn2.Train(trainInputs, trainOutputs, 1, 3000, 1.0E-7);
 
         System.out.println("Predicting output...");
         System.out.println(Arrays.toString(nn2.GetAllWeights()));
@@ -55,5 +57,6 @@ public class XOR {
         nn.DisplayPredictions(pred);
 
         System.out.println(Arrays.toString(nn2.PredictClasses(trainInputs)));
+        nn2.DisplayTestAccuracy(trainInputs, trainOutputs);
     }
 }
