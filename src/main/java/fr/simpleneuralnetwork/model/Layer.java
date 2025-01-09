@@ -3,6 +3,7 @@ package fr.simpleneuralnetwork.model;
 import org.ejml.simple.SimpleMatrix;
 import fr.simpleneuralnetwork.utils.MathsUtilities;
 
+import java.util.Arrays;
 import java.util.Random;
 
 public class Layer {
@@ -87,8 +88,7 @@ public class Layer {
         SaveActivations(inputs, batchSize);
         ComputeMatrixForward(inputs, batchSize);
 
-
-        return MathsUtilities.invokeMatrix(linearInputs, this::Forward);
+        return MathsUtilities.ApplyActivation(linearInputs, this::Forward);
     }
 
     public void SaveActivations(double[][] inputs, int batchSize) {
@@ -132,65 +132,43 @@ public class Layer {
         return 2 * (output - expectedOutput);
     }
 
-    public void UpdateWeightsGradients(int neuron, double nextGradientValue, int batchIndex) {
-        for (int feature = 0; feature < featuresNumber; feature++) {
-            weightsGradients[neuron][feature] += activations[batchIndex][feature] * nextGradientValue;
-        }
+    public void UpdateGradients(SimpleMatrix newGradientsMatrix) {
+        SimpleMatrix weightsGradientsMatrix = newGradientsMatrix.transpose().mult(new SimpleMatrix(activations)); // [neuronsCurrent * featuresCurrent]
+        weightsGradients = weightsGradientsMatrix.getDDRM().get2DData();
+
+        double[] tmpArr = new double[newGradientsMatrix.getNumRows()];
+        Arrays.fill(tmpArr, 1.0);
+
+        SimpleMatrix biasesGradientsMatrix = newGradientsMatrix.transpose().mult(new SimpleMatrix(newGradientsMatrix.getNumRows(),
+                1, true, tmpArr)
+        ); // [neuronsCurrent * 1]
+
+        biasesGradients = biasesGradientsMatrix.getDDRM().getData();
     }
 
     public double[][] ComputeOutputGradientsBatch(double[][] outputs, double[][] expectedOutputs) {
-        int batchSize = outputs.length;
-        double[][] gradients = new double[batchSize][neuronsNumber];
+        SimpleMatrix forwardedDerivatives = new SimpleMatrix(
+                MathsUtilities.ApplyActivation(linearInputs, this::ForwardDerivative) // [batchSize * neuronsCurrent]
+        );
+        SimpleMatrix lossDerivatives = new SimpleMatrix(
+                MathsUtilities.ApplyLoss(outputs, expectedOutputs, this::LossDerivative) // [batchSize * neuronsCurrent]
+        );
+        SimpleMatrix newGradientsMatrix = lossDerivatives.elementMult(forwardedDerivatives);
+        UpdateGradients(newGradientsMatrix);
 
-        for (int i = 0; i < batchSize; i++) {
-            gradients[i] = ComputeOutputGradients(outputs, expectedOutputs, i);
-        }
-        return  gradients;
-    }
-
-    public double[] ComputeOutputGradients(double[][] outputs, double[][] expectedOutputs, int batchIndex) {
-        double[] derivativeLossOutput = new double[outputs[0].length];
-
-        for (int neuron = 0; neuron < neuronsNumber; neuron++) {
-            double dLoss = LossDerivative(outputs[batchIndex][neuron], expectedOutputs[batchIndex][neuron]);
-            double forwardedDerivative = ForwardDerivative(linearInputs[batchIndex][neuron]);
-            derivativeLossOutput[neuron] = dLoss * forwardedDerivative;
-
-            UpdateWeightsGradients(neuron, derivativeLossOutput[neuron], batchIndex);
-            biasesGradients[neuron] += derivativeLossOutput[neuron];
-        }
-        return derivativeLossOutput;
+        return newGradientsMatrix.getDDRM().get2DData();
     }
 
     public double[][] BackPropagationBatch(Layer nextLayer, double[][] nextGradients) {
         SimpleMatrix forwardedDerivatives = new SimpleMatrix(
-                MathsUtilities.invokeMatrix(linearInputs, this::ForwardDerivative) // [batchSize * neuronsCurrent]
+                MathsUtilities.ApplyActivation(linearInputs, this::ForwardDerivative) // [batchSize * neuronsCurrent]
         );
-
         SimpleMatrix weightsMatrix= new SimpleMatrix(nextLayer.getWeights()); // [neuronsNext x neuronsCurrent]
         SimpleMatrix nextGradientsMatrix = new SimpleMatrix(nextGradients); // [batchSize * neuronsNext]
-        SimpleMatrix tmpGradientsMatrix = nextGradientsMatrix.mult(weightsMatrix); // [batchSize * neuronsCurrent]
-        SimpleMatrix newGradientsMatrix = tmpGradientsMatrix.elementMult(forwardedDerivatives); // [batchSize * neuronsCurrent]
+        SimpleMatrix newGradientsMatrix = nextGradientsMatrix.mult(weightsMatrix).elementMult(forwardedDerivatives); // [batchSize * neuronsCurrent]
+        UpdateGradients(newGradientsMatrix);
 
-        SimpleMatrix activationsMatrix = new SimpleMatrix(activations); // [batchSize * featuresCurrent]
-        SimpleMatrix weightsGradientsMatrix = newGradientsMatrix.transpose().mult(activationsMatrix); // [neuronsCurrent * featuresCurrent]
-        weightsGradients = weightsGradientsMatrix.getDDRM().get2DData();
-
-//        SimpleMatrix biasesGradientsMatrix = newGradientsMatrix.transpose().col(
-//                new SimpleMatrix(nextGradients.length, 1, true, 1.0) //[neuronsCurrent * 1]
-//        );
-        // Calcul manuel des sommes des colonnes
-        double[] biasesGradientsArray = new double[newGradientsMatrix.getNumCols()];
-        for (int col = 0; col < newGradientsMatrix.getNumCols(); col++) {
-            double sum = 0.0;
-            for (int row = 0; row < newGradientsMatrix.getNumRows(); row++) {
-                sum += newGradientsMatrix.get(row, col);
-            }
-            biasesGradientsArray[col] = sum;
-        }
-        biasesGradients = biasesGradientsArray;
-
-        return tmpGradientsMatrix.getDDRM().get2DData();
+        return newGradientsMatrix.getDDRM().get2DData();
     }
 
     public void UpdateWeights(double learningRate, int datasetSize) {

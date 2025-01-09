@@ -88,10 +88,13 @@ public class NeuralNetwork {
             totalCorrect += GetCorrectPredictions(outputs, batchOutputs);
         }
 
-        UpdateAllWeights(learningRate, trainInputs.length);
+        UpdateAllWeights(learningRate, totalSize);
+        PrintTrainInfos(totalLoss, totalCorrect, totalSize);
+    }
 
-        double averageLoss = totalLoss / trainInputs.length;
-        double accuracy = (double) totalCorrect / trainInputs.length;
+    void PrintTrainInfos(double totalLoss, double totalCorrect, int inputLength) {
+        double averageLoss = totalLoss / inputLength;
+        double accuracy = (double) totalCorrect / inputLength;
         System.out.printf("Loss: %.6f - Accuracy: %.2f%%%n", averageLoss, accuracy * 100);
     }
 

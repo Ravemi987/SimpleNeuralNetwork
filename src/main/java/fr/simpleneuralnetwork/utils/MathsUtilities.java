@@ -1,5 +1,6 @@
 package fr.simpleneuralnetwork.utils;
 
+import java.util.function.BiFunction;
 import java.util.function.Function;
 
 public class MathsUtilities {
@@ -35,7 +36,8 @@ public class MathsUtilities {
         return maxIndex;
     }
 
-    public static double[][] invokeMatrix(double[][] Z, Function<Double, Double> function) {
+
+    public static double[][] ApplyActivation(double[][] Z, Function<Double, Double> function) {
         int rows = Z.length;
         int cols = Z[0].length;
         double[][] A = new double[rows][cols];
@@ -48,4 +50,16 @@ public class MathsUtilities {
         return A;
     }
 
+    public static double[][] ApplyLoss(double[][] X, double[][] Y, BiFunction<Double, Double, Double> function) {
+        int rows = X.length;
+        int cols = X[0].length;
+        double[][] A = new double[rows][cols];
+
+        for (int i = 0; i < rows; i++) {
+            for (int j = 0; j < cols; j++) {
+                A[i][j] = function.apply(X[i][j], Y[i][j]);
+            }
+        }
+        return A;
+    }
 }
