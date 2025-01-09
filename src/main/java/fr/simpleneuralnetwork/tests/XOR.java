@@ -49,7 +49,7 @@ public class XOR {
         NeuralNetwork nn2 = new NeuralNetwork(layerSizes);
 
         System.out.println("Training...");
-        nn.Train(trainInputs, trainOutputs, 1, 1000, 4, 1.0E-4);
+        nn.Train(trainInputs, trainOutputs, 1, 1000, 4, 1.0E-6);
 
         System.out.println("Predicting output...");
         System.out.println(Arrays.toString(nn.GetAllWeights()));

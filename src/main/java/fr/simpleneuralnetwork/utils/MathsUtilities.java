@@ -35,7 +35,7 @@ public class MathsUtilities {
         return maxIndex;
     }
 
-    public static double[][] ApplyActivation(double[][] Z, Function<Double, Double> function) {
+    public static double[][] invokeMatrix(double[][] Z, Function<Double, Double> function) {
         int rows = Z.length;
         int cols = Z[0].length;
         double[][] A = new double[rows][cols];
