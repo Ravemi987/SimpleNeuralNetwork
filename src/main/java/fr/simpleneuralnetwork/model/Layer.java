@@ -1,5 +1,6 @@
 package fr.simpleneuralnetwork.model;
 
+import fr.simpleneuralnetwork.model.Activations.Sigmoid;
 import org.ejml.simple.SimpleMatrix;
 import fr.simpleneuralnetwork.utils.MathsUtilities;
 
@@ -20,6 +21,8 @@ public class Layer {
 
     private double[][] weightsGradients;
     private double[] biasesGradients;
+
+    private final IActivation activationFunction = new Sigmoid();
 
     public Layer(int nbFeatures, int nbNeurons) {
         this.featuresNumber = nbFeatures;
@@ -61,22 +64,11 @@ public class Layer {
         return neuronsNumber;
     }
 
-    public double Forward(double z) {
-        return NeuralNetwork.ActivationFunction(z);
-    }
+    public double[][] ForwardPropagation(double[][] inputs) {
+        this.linearInputs = new double[1][neuronsNumber];
+        ComputeMatrixForward(inputs, 1);
 
-    public double ForwardDerivative(double z) {
-        return NeuralNetwork.ActivationDerivative(z);
-    }
-
-    public double[] ForwardPropagation(double[] input) {
-        double[] output = new double[neuronsNumber];
-
-        for (int neuron = 0; neuron < neuronsNumber; neuron++) {
-            output[neuron] = MathsUtilities.Linear(input, weights[neuron], biases[neuron]);
-            output[neuron] = Forward(output[neuron]);
-        }
-        return output;
+        return activationFunction.ApplyMatrix(linearInputs);
     }
 
     public double[][] ForwardPropagationBatch(double[][] inputs) {
@@ -88,7 +80,7 @@ public class Layer {
         SaveActivations(inputs, batchSize);
         ComputeMatrixForward(inputs, batchSize);
 
-        return MathsUtilities.ApplyActivation(linearInputs, this::Forward);
+        return activationFunction.ApplyMatrix(linearInputs);
     }
 
     public void SaveActivations(double[][] inputs, int batchSize) {
@@ -123,15 +115,6 @@ public class Layer {
         }
     }
 
-    public double NeuronLoss(double output, double expectedOutput) {
-        double diff = output - expectedOutput;
-        return diff * diff;
-    }
-
-    public double LossDerivative(double output, double expectedOutput) {
-        return 2 * (output - expectedOutput);
-    }
-
     public void UpdateGradients(SimpleMatrix newGradientsMatrix) {
         SimpleMatrix weightsGradientsMatrix = newGradientsMatrix.transpose().mult(new SimpleMatrix(activations)); // [neuronsCurrent * featuresCurrent]
         weightsGradients = weightsGradientsMatrix.getDDRM().get2DData();
@@ -148,10 +131,10 @@ public class Layer {
 
     public double[][] ComputeOutputGradientsBatch(double[][] outputs, double[][] expectedOutputs) {
         SimpleMatrix forwardedDerivatives = new SimpleMatrix(
-                MathsUtilities.ApplyActivation(linearInputs, this::ForwardDerivative) // [batchSize * neuronsCurrent]
+                activationFunction.DerivativeMatrix(linearInputs) // [batchSize * neuronsCurrent]
         );
         SimpleMatrix lossDerivatives = new SimpleMatrix(
-                MathsUtilities.ApplyLoss(outputs, expectedOutputs, this::LossDerivative) // [batchSize * neuronsCurrent]
+                NeuralNetwork.getLossFunction().DerivativeMatrix(outputs, expectedOutputs) // [batchSize * neuronsCurrent]
         );
         SimpleMatrix newGradientsMatrix = lossDerivatives.elementMult(forwardedDerivatives);
         UpdateGradients(newGradientsMatrix);
@@ -161,7 +144,7 @@ public class Layer {
 
     public double[][] BackPropagationBatch(Layer nextLayer, double[][] nextGradients) {
         SimpleMatrix forwardedDerivatives = new SimpleMatrix(
-                MathsUtilities.ApplyActivation(linearInputs, this::ForwardDerivative) // [batchSize * neuronsCurrent]
+                activationFunction.DerivativeMatrix(linearInputs) // [batchSize * neuronsCurrent]
         );
         SimpleMatrix weightsMatrix= new SimpleMatrix(nextLayer.getWeights()); // [neuronsNext x neuronsCurrent]
         SimpleMatrix nextGradientsMatrix = new SimpleMatrix(nextGradients); // [batchSize * neuronsNext]

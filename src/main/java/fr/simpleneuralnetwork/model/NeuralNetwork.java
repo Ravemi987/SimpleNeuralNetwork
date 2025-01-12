@@ -1,5 +1,6 @@
 package fr.simpleneuralnetwork.model;
 
+import fr.simpleneuralnetwork.model.Losses.MeanSquaredError;
 import fr.simpleneuralnetwork.utils.MathsUtilities;
 
 import java.util.Arrays;
@@ -8,6 +9,7 @@ import java.util.Arrays;
 public class NeuralNetwork {
 
     private final Layer[] layers;
+    private static final ILoss lossFunction = new MeanSquaredError();
 
     public NeuralNetwork(int... layerSizes) {
         layers = new Layer[layerSizes.length - 1];
@@ -35,12 +37,12 @@ public class NeuralNetwork {
     }
 
     public double[] NNForwardPropagation(double[] input) {
-        double[] activations = input;
+        double[][] activations = {input};
 
         for (Layer layer: layers) {
             activations = layer.ForwardPropagation(activations);
         }
-        return activations;
+        return activations[0];
     }
 
     public double[][] NNForwardPropagationBatch(double[][] inputs) {
@@ -92,12 +94,6 @@ public class NeuralNetwork {
         PrintTrainInfos(totalLoss, totalCorrect, totalSize);
     }
 
-    void PrintTrainInfos(double totalLoss, double totalCorrect, int inputLength) {
-        double averageLoss = totalLoss / inputLength;
-        double accuracy = (double) totalCorrect / inputLength;
-        System.out.printf("Loss: %.6f - Accuracy: %.2f%%%n", averageLoss, accuracy * 100);
-    }
-
     public void Train(double[][] trainInputs, double[] expectedOutput, double learningRate,
                       double iterationsNumber, int batchSize, double decay) {
         double[][] expectedOutputs = OneHotEncoder(expectedOutput, trainInputs[0].length);
@@ -134,10 +130,9 @@ public class NeuralNetwork {
 
     public double Loss(double[] output, double[] expectedOutputs) {
         double error = 0;
-        Layer outputLayer = layers[layers.length - 1];
 
         for (int numOutput = 0; numOutput < output.length; numOutput++) {
-            error += outputLayer.NeuronLoss(output[numOutput], expectedOutputs[numOutput]);
+            error += lossFunction.Apply(output[numOutput], expectedOutputs[numOutput]);
         }
 
         return error;
@@ -195,27 +190,16 @@ public class NeuralNetwork {
         return predictions;
     }
 
-    public static double ActivationFunction(double z) {
-        return MathsUtilities.Sigmoid(z);
-    }
-
-    public static double ActivationDerivative(double z) {
-        return MathsUtilities.SigmoidDerivative(z);
+    public static ILoss getLossFunction() {
+        return lossFunction;
     }
 
     // ***************** HELPERS *****************
 
-    public void DisplayExpectedOutputs(double[] expectedOutput) {
-        System.out.println("Expected outputs: ");
-        System.out.println(Arrays.toString(expectedOutput));
-    }
-
-    public void DisplayEncodedExpectedOutputs(double[][] expectedOutputs) {
-        System.out.println("Encoded expected outputs: ");
-
-        for (double[] output: expectedOutputs) {
-            System.out.println(Arrays.toString(output));
-        }
+    void PrintTrainInfos(double totalLoss, double totalCorrect, int inputLength) {
+        double averageLoss = totalLoss / inputLength;
+        double accuracy = totalCorrect / inputLength;
+        System.out.printf("Loss: %.6f - Accuracy: %.2f%%%n", averageLoss, accuracy * 100);
     }
 
     public void DisplayPredictions(double[][] predictions) {
