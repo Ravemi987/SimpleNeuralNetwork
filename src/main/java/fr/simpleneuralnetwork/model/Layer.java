@@ -1,6 +1,9 @@
 package fr.simpleneuralnetwork.model;
 
 import fr.simpleneuralnetwork.model.Activations.Sigmoid;
+import fr.simpleneuralnetwork.model.Activations.SoftMax;
+import fr.simpleneuralnetwork.model.Losses.CrossEntropy;
+import fr.simpleneuralnetwork.model.Losses.MeanSquaredError;
 import org.ejml.simple.SimpleMatrix;
 import fr.simpleneuralnetwork.utils.MathsUtilities;
 
@@ -22,11 +25,12 @@ public class Layer {
     private double[][] weightsGradients;
     private double[] biasesGradients;
 
-    private final IActivation activationFunction = new Sigmoid();
+    private IActivation activationFunction;
 
-    public Layer(int nbFeatures, int nbNeurons) {
+    public Layer(int nbFeatures, int nbNeurons, String activationFun) {
         this.featuresNumber = nbFeatures;
         this.neuronsNumber = nbNeurons;
+        ScanActivationFunction(activationFun);
 
         weights = new double[neuronsNumber][featuresNumber];
         biases = new double[neuronsNumber];
@@ -37,12 +41,27 @@ public class Layer {
         InitWeights();
     }
 
+    public void ScanActivationFunction(String activationFun) {
+        switch(activationFun) {
+            case "Sigmoid":
+                activationFunction = new Sigmoid();
+                break;
+            case "Softmax":
+                activationFunction = new SoftMax();
+                break;
+            default:
+                System.err.println("Unknown loss function.");
+                System.exit(-1);
+        }
+    }
+
     // Test
-    public Layer(int nbFeatures, int nbNeurons, double[][] initialWeights, double[] initialBiases) {
+    public Layer(int nbFeatures, int nbNeurons, double[][] initialWeights, double[] initialBiases, String activationFun) {
         this.featuresNumber = nbFeatures;
         this.neuronsNumber = nbNeurons;
         this.weights = initialWeights;
         this.biases = initialBiases;
+        ScanActivationFunction(activationFun);
 
         weightsGradients = new double[neuronsNumber][featuresNumber];
         biasesGradients = new double[neuronsNumber];

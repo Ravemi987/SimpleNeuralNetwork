@@ -8,7 +8,7 @@ public class Sigmoid implements IActivation {
         return 1.0 / (1.0 + Math.exp(-1 * z));
     }
 
-    public double Derivative(double z) {
+    private double Derivative(double z) {
         double sigmoid = Apply(z);
         return sigmoid * (1 - sigmoid);
     }

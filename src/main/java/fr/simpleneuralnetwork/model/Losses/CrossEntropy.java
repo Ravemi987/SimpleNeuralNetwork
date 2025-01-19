@@ -2,17 +2,21 @@ package fr.simpleneuralnetwork.model.Losses;
 
 import fr.simpleneuralnetwork.model.ILoss;
 
-public class MeanSquaredError implements ILoss {
+public class CrossEntropy implements ILoss {
+
+    private static final double EPSILON = 1E-100;
 
     @Override
     public double Apply(double output, double expectedOutput) {
-        double diff = output - expectedOutput;
-        return diff * diff;
+        return -expectedOutput * Math.log(output + EPSILON);
     }
 
     @Override
     public double Derivative(double output, double expectedOutput) {
-        return 2 * (output - expectedOutput);
+        if (output == 0 || output == 1) {
+            return 0;
+        }
+        return (-output + expectedOutput) / (output * (output - 1));
     }
 
     @Override
@@ -34,6 +38,6 @@ public class MeanSquaredError implements ILoss {
             totalError += Loss(outputs[i], expectedOutputs[i]);
         }
 
-        return totalError / outputs.length;
+        return totalError;
     }
 }

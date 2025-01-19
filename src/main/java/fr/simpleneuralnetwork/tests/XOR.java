@@ -45,11 +45,10 @@ public class XOR {
         double[][] trainInputs = generateTrainInputs();
         double[] trainOutputs = generateOutputs();
 
-        NeuralNetwork nn = new NeuralNetwork(initialWeights, initialBiases, layerSizes);
-        NeuralNetwork nn2 = new NeuralNetwork(layerSizes);
+        NeuralNetwork nn = new NeuralNetwork("CrossEntropy", "Sigmoid", "Sigmoid", layerSizes);
 
         System.out.println("Training...");
-        nn.Train(trainInputs, trainOutputs, 1, 1000, 4, 1.0E-6);
+        nn.Train(trainInputs, trainOutputs, 1, 1000, 4, 1.0E-4);
 
         System.out.println("Predicting output...");
         System.out.println(Arrays.toString(nn.GetAllWeights()));

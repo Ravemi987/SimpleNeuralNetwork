@@ -1,5 +1,6 @@
 package fr.simpleneuralnetwork.model;
 
+import fr.simpleneuralnetwork.model.Losses.CrossEntropy;
 import fr.simpleneuralnetwork.model.Losses.MeanSquaredError;
 import fr.simpleneuralnetwork.utils.MathsUtilities;
 
@@ -9,30 +10,63 @@ import java.util.Arrays;
 public class NeuralNetwork {
 
     private final Layer[] layers;
-    private static final ILoss lossFunction = new MeanSquaredError();
+    private static ILoss lossFunction;
 
-    public NeuralNetwork(int... layerSizes) {
+    public NeuralNetwork(String loss, String hiddenActivation, String outputActivation, int... layerSizes) {
         layers = new Layer[layerSizes.length - 1];
-        InitLayers(layerSizes);
+        ScanLossFunction(loss);
+        InitLayers(layerSizes, hiddenActivation, outputActivation);
     }
 
-    public void InitLayers(int[] layerSizes) {
+    public void ScanLossFunction(String loss) {
+        switch(loss) {
+            case "MeanSquaredError":
+              lossFunction = new MeanSquaredError();
+              break;
+            case "CrossEntropy":
+                lossFunction = new CrossEntropy();
+                break;
+            default:
+                System.err.println("Unknown loss function.");
+                System.exit(-1);
+        }
+    }
+
+    public void InitLayers(int[] layerSizes, String hiddenActivation, String outputActivation) {
         for (int i = 0; i < layers.length; i++) {
-            layers[i] = new Layer(layerSizes[i], layerSizes[i+1]);
+            if (i < layers.length - 1) {
+                layers[i] = new Layer(layerSizes[i], layerSizes[i + 1], hiddenActivation);
+            } else {
+                layers[i] = new Layer(layerSizes[i], layerSizes[i + 1], outputActivation);
+            }
         }
     }
 
     // Test
-    public NeuralNetwork(double[][][] initialWeights, double[][] initialBiases, int[] layerSizes) {
+    public NeuralNetwork(double[][][] initialWeights, double[][] initialBiases, int[] layerSizes,
+                         String loss, String hiddenActivation, String outputActivation) {
         layers = new Layer[layerSizes.length - 1];
+        ScanLossFunction(loss);
 
         for (int i = 0; i < layers.length; i++) {
-            layers[i] = new Layer(
-                    layerSizes[i],
-                    layerSizes[i + 1],
-                    initialWeights[i],
-                    initialBiases[i]
-            );
+            if (i < layers.length - 1) {
+                layers[i] = new Layer(
+                        layerSizes[i],
+                        layerSizes[i + 1],
+                        initialWeights[i],
+                        initialBiases[i],
+                        hiddenActivation
+                );
+            } else {
+                layers[i] = new Layer(
+                        layerSizes[i],
+                        layerSizes[i + 1],
+                        initialWeights[i],
+                        initialBiases[i],
+                        outputActivation
+                );
+            }
+
         }
     }
 
@@ -86,12 +120,15 @@ public class NeuralNetwork {
 
             BackPropagation(outputs, batchOutputs);
 
-            totalLoss += GlobalLoss(outputs, batchOutputs);
+            totalLoss += lossFunction.GlobalLoss(outputs, batchOutputs);
             totalCorrect += GetCorrectPredictions(outputs, batchOutputs);
+
+            UpdateAllWeights(learningRate, batchSize);
         }
 
-        UpdateAllWeights(learningRate, totalSize);
-        PrintTrainInfos(totalLoss, totalCorrect, totalSize);
+        double averageLoss = totalLoss / batchesNumber;
+        double accuracy = (totalCorrect / (double) totalSize) * 100;
+        System.out.printf("Loss: %.6f - Accuracy: %.2f%%%n", averageLoss, accuracy);
     }
 
     public void Train(double[][] trainInputs, double[] expectedOutput, double learningRate,
@@ -116,26 +153,6 @@ public class NeuralNetwork {
         }
 
         return encodedOutputs;
-    }
-
-    public double GlobalLoss(double[][] outputs, double[][] expectedOutputs) {
-        double totalError = 0;
-
-        for (int i = 0; i < outputs.length; i++) {
-            totalError += Loss(outputs[i], expectedOutputs[i]);
-        }
-
-        return totalError;
-    }
-
-    public double Loss(double[] output, double[] expectedOutputs) {
-        double error = 0;
-
-        for (int numOutput = 0; numOutput < output.length; numOutput++) {
-            error += lossFunction.Apply(output[numOutput], expectedOutputs[numOutput]);
-        }
-
-        return error;
     }
 
     public int GetCorrectPredictions(double[][] predictions, double[][] expectedOutputs) {
@@ -196,15 +213,20 @@ public class NeuralNetwork {
 
     // ***************** HELPERS *****************
 
-    void PrintTrainInfos(double totalLoss, double totalCorrect, int inputLength) {
-        double averageLoss = totalLoss / inputLength;
-        double accuracy = totalCorrect / inputLength;
-        System.out.printf("Loss: %.6f - Accuracy: %.2f%%%n", averageLoss, accuracy * 100);
-    }
-
     public void DisplayPredictions(double[][] predictions) {
         for (int i = 0; i < predictions.length; i++) {
             System.out.println(i + "    " + Arrays.toString(predictions[i]));
+        }
+    }
+
+    public void DisplayPredictionsWithColors(double[] predictions, double[] expectedOutputs) {
+        for (int i = 0; i < predictions.length; i++) {
+
+            if (predictions[i] == expectedOutputs[i]) {
+                System.out.println("\u001B[32m" + "Prediction correct: " + predictions[i] + " == " + expectedOutputs[i] + "\u001B[0m");
+            } else {
+                System.out.println("\u001B[31m" + "Prediction incorrect: " + predictions[i] + " != " + expectedOutputs[i] + "\u001B[0m");
+            }
         }
     }
 

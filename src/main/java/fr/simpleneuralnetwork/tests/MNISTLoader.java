@@ -118,7 +118,7 @@ public class MNISTLoader {
         int[] headerInfos = readImagesHeader(filePath);
 
         if (headerInfos != null)
-            return readImages(filePath, 1000, headerInfos[2], headerInfos[3]);
+            return readImages(filePath, headerInfos[1], headerInfos[2], headerInfos[3]);
         return null;
     }
 
@@ -127,7 +127,7 @@ public class MNISTLoader {
         int[] headerInfos = readLabelsHeader(filePath);
 
         if (headerInfos != null)
-            return readLabels(filePath, 1000);
+            return readLabels(filePath, headerInfos[1]);
         return null;
     }
 
@@ -136,7 +136,7 @@ public class MNISTLoader {
         int[] headerInfos = readImagesHeader(filePath);
 
         if (headerInfos != null)
-            return readImages(filePath, 1000, headerInfos[2], headerInfos[3]);
+            return readImages(filePath, headerInfos[1], headerInfos[2], headerInfos[3]);
         return null;
     }
 
@@ -145,7 +145,7 @@ public class MNISTLoader {
         int[] headerInfos = readLabelsHeader(filePath);
 
         if (headerInfos != null)
-            return readLabels(filePath, 1000);
+            return readLabels(filePath, headerInfos[1]);
         return null;
     }
 
@@ -180,9 +180,12 @@ public class MNISTLoader {
 
         int[] layerSizes = new int[]{784, 128, 64, 10};
 
-        NeuralNetwork nn = new NeuralNetwork(layerSizes);
-        nn.Train(trainData, trainLabels, 1, 200, 512, 1E-7);
+        NeuralNetwork nn = new NeuralNetwork("CrossEntropy", "Sigmoid", "Softmax", layerSizes);
+        nn.Train(trainData, trainLabels, 1, 10, 128, 1E-7);
         nn.DisplayTestAccuracy(testData, testLabels);
+
+        double[] predictions = nn.PredictAllClasses(testData);
+        nn.DisplayPredictionsWithColors(predictions, testLabels);
 
         System.out.println(nn.PredictClass(trainData[0]));
     }
