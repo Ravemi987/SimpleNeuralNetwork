@@ -12,23 +12,43 @@ public class NeuralNetwork {
     private final Layer[] layers;
     private static ILoss lossFunction;
 
-    public NeuralNetwork(String loss, String hiddenActivation, String outputActivation, int... layerSizes) {
+    public NeuralNetwork(int[] layerSizes, String loss, String hiddenActivation, String outputActivation) {
         layers = new Layer[layerSizes.length - 1];
         ScanLossFunction(loss);
         InitLayers(layerSizes, hiddenActivation, outputActivation);
     }
 
+    public NeuralNetwork(double[][][] initialWeights, double[][] initialBiases, int[] layerSizes,
+                         String loss, String hiddenActivation, String outputActivation) {
+        layers = new Layer[layerSizes.length - 1];
+        ScanLossFunction(loss);
+        InitLayers(initialWeights, initialBiases, layerSizes, hiddenActivation, outputActivation);
+    }
+
     public void ScanLossFunction(String loss) {
         switch(loss) {
             case "MeanSquaredError":
-              lossFunction = new MeanSquaredError();
-              break;
+                lossFunction = new MeanSquaredError();
+                break;
             case "CrossEntropy":
                 lossFunction = new CrossEntropy();
                 break;
             default:
                 System.err.println("Unknown loss function.");
                 System.exit(-1);
+        }
+    }
+
+    public void InitLayers(double[][][] initialWeights, double[][] initialBiases,
+                           int[] layerSizes, String hiddenActivation, String outputActivation) {
+        for (int i = 0; i < layers.length; i++) {
+            if (i < layers.length - 1) {
+                layers[i] = new Layer(initialWeights[i], initialBiases[i],
+                        layerSizes[i], layerSizes[i + 1], hiddenActivation);
+            } else {
+                layers[i] = new Layer(initialWeights[i], initialBiases[i],
+                        layerSizes[i], layerSizes[i + 1], outputActivation);
+            }
         }
     }
 
@@ -39,34 +59,6 @@ public class NeuralNetwork {
             } else {
                 layers[i] = new Layer(layerSizes[i], layerSizes[i + 1], outputActivation);
             }
-        }
-    }
-
-    // Test
-    public NeuralNetwork(double[][][] initialWeights, double[][] initialBiases, int[] layerSizes,
-                         String loss, String hiddenActivation, String outputActivation) {
-        layers = new Layer[layerSizes.length - 1];
-        ScanLossFunction(loss);
-
-        for (int i = 0; i < layers.length; i++) {
-            if (i < layers.length - 1) {
-                layers[i] = new Layer(
-                        layerSizes[i],
-                        layerSizes[i + 1],
-                        initialWeights[i],
-                        initialBiases[i],
-                        hiddenActivation
-                );
-            } else {
-                layers[i] = new Layer(
-                        layerSizes[i],
-                        layerSizes[i + 1],
-                        initialWeights[i],
-                        initialBiases[i],
-                        outputActivation
-                );
-            }
-
         }
     }
 

@@ -41,7 +41,7 @@ public class XOR {
         double[][] initialBiases = {biasesLayer1, biasesLayer2};
         // *************************************************************
 
-        int[] layerSizes = {2, 2, 1}; // Deux entrées, une couche cachée avec deux neurones, un neurone de sortie
+        int[] layerSizes = new int[]{2, 2, 1}; // Deux entrées, une couche cachée avec deux neurones, un neurone de sortie
         double[][] trainInputs = generateTrainInputs();
         double[] trainOutputs = generateOutputs();
 
