@@ -1,7 +1,13 @@
 package fr.simpleneuralnetwork.model;
 
+import fr.simpleneuralnetwork.model.Activations.Sigmoid;
+import fr.simpleneuralnetwork.model.Activations.SoftMax;
+import fr.simpleneuralnetwork.model.Losses.CrossEntropy;
+import fr.simpleneuralnetwork.model.Losses.MeanSquaredError;
+import org.ejml.simple.SimpleMatrix;
 import fr.simpleneuralnetwork.utils.MathsUtilities;
 
+import java.util.Arrays;
 import java.util.Random;
 
 public class Layer {
@@ -10,21 +16,21 @@ public class Layer {
     private final int featuresNumber;
     private final int neuronsNumber;
 
-    private final double[] activations;
-    private final double[] linearInputs;
+    private double[][] activations;
+    private double[][] linearInputs;
 
     private final double[][] weights;
     private final double[] biases;
 
-    private final double[][] weightsGradients;
-    private final double[] biasesGradients;
+    private double[][] weightsGradients;
+    private double[] biasesGradients;
 
-    public Layer(int nbFeatures, int nbNeurons) {
+    private IActivation activationFunction;
+
+    public Layer(int nbFeatures, int nbNeurons, String activationFun) {
         this.featuresNumber = nbFeatures;
         this.neuronsNumber = nbNeurons;
-
-        activations = new double[featuresNumber];
-        linearInputs = new double[neuronsNumber];
+        ScanActivationFunction(activationFun);
 
         weights = new double[neuronsNumber][featuresNumber];
         biases = new double[neuronsNumber];
@@ -35,15 +41,28 @@ public class Layer {
         InitWeights();
     }
 
+    public void ScanActivationFunction(String activationFun) {
+        switch(activationFun) {
+            case "Sigmoid":
+                activationFunction = new Sigmoid();
+                break;
+            case "Softmax":
+                activationFunction = new SoftMax();
+                break;
+            default:
+                System.err.println("Unknown loss function.");
+                System.exit(-1);
+        }
+    }
+
     // Test
-    public Layer(int nbFeatures, int nbNeurons, double[][] initialWeights, double[] initialBiases) {
+    public Layer(int nbFeatures, int nbNeurons, double[][] initialWeights, double[] initialBiases, String activationFun) {
         this.featuresNumber = nbFeatures;
         this.neuronsNumber = nbNeurons;
         this.weights = initialWeights;
         this.biases = initialBiases;
+        ScanActivationFunction(activationFun);
 
-        activations = new double[featuresNumber];
-        linearInputs = new double[neuronsNumber];
         weightsGradients = new double[neuronsNumber][featuresNumber];
         biasesGradients = new double[neuronsNumber];
     }
@@ -64,25 +83,45 @@ public class Layer {
         return neuronsNumber;
     }
 
-    public double Forward(double z) {
-        return NeuralNetwork.ActivationFunction(z);
+    public double[][] ForwardPropagation(double[][] inputs) {
+        this.linearInputs = new double[1][neuronsNumber];
+        ComputeMatrixForward(inputs, 1);
+
+        return activationFunction.ApplyMatrix(linearInputs);
     }
 
-    public double ForwardDerivative(double z) {
-        return NeuralNetwork.ActivationDerivative(z);
+    public double[][] ForwardPropagationBatch(double[][] inputs) {
+        int batchSize = inputs.length;
+
+        this.activations = new double[batchSize][featuresNumber];
+        this.linearInputs = new double[batchSize][neuronsNumber];
+
+        SaveActivations(inputs, batchSize);
+        ComputeMatrixForward(inputs, batchSize);
+
+        return activationFunction.ApplyMatrix(linearInputs);
     }
 
-    public double[] ForwardPropagation(double[] input) {
-        double[] outputs = new double[neuronsNumber];
+    public void SaveActivations(double[][] inputs, int batchSize) {
+        for (int i = 0; i < batchSize; i++) {
+            System.arraycopy(inputs[i], 0, activations[i], 0, featuresNumber);
+        }
+    }
 
-        if (featuresNumber >= 0) System.arraycopy(input, 0, activations, 0, featuresNumber);
+    public void ComputeMatrixForward(double[][] inputs, int batchSize) {
+        SimpleMatrix inputMatrix = new SimpleMatrix(inputs);
+        SimpleMatrix weightMatrix = new SimpleMatrix(weights).transpose();
+        SimpleMatrix biasMatrix = new SimpleMatrix(1, biases.length, true, biases);
 
-        for (int neuron = 0; neuron < neuronsNumber; neuron++) {
-            linearInputs[neuron] = MathsUtilities.Linear(input, weights[neuron], biases[neuron]);
-            outputs[neuron] = Forward(linearInputs[neuron]);
+        SimpleMatrix extendedBiasMatrix = new SimpleMatrix(batchSize, biases.length);
+        for (int i = 0; i < batchSize; i++) {
+            extendedBiasMatrix.insertIntoThis(i, 0, biasMatrix);
         }
 
-        return outputs;
+        SimpleMatrix prodMatrix = inputMatrix.mult(weightMatrix);
+        SimpleMatrix linearInputMatrix = prodMatrix.plus(extendedBiasMatrix);
+
+        this.linearInputs = linearInputMatrix.getDDRM().get2DData();
     }
 
     public void InitWeights() {
@@ -95,51 +134,43 @@ public class Layer {
         }
     }
 
-    public double NeuronLoss(double output, double expectedOutput) {
-        double diff = output - expectedOutput;
-        return diff * diff;
+    public void UpdateGradients(SimpleMatrix newGradientsMatrix) {
+        SimpleMatrix weightsGradientsMatrix = newGradientsMatrix.transpose().mult(new SimpleMatrix(activations)); // [neuronsCurrent * featuresCurrent]
+        weightsGradients = weightsGradientsMatrix.getDDRM().get2DData();
+
+        double[] tmpArr = new double[newGradientsMatrix.getNumRows()];
+        Arrays.fill(tmpArr, 1.0);
+
+        SimpleMatrix biasesGradientsMatrix = newGradientsMatrix.transpose().mult(new SimpleMatrix(newGradientsMatrix.getNumRows(),
+                1, true, tmpArr)
+        ); // [neuronsCurrent * 1]
+
+        biasesGradients = biasesGradientsMatrix.getDDRM().getData();
     }
 
-    public double LossDerivative(double output, double expectedOutput) {
-        return 2 * (output - expectedOutput);
+    public double[][] ComputeOutputGradientsBatch(double[][] outputs, double[][] expectedOutputs) {
+        SimpleMatrix forwardedDerivatives = new SimpleMatrix(
+                activationFunction.DerivativeMatrix(linearInputs) // [batchSize * neuronsCurrent]
+        );
+        SimpleMatrix lossDerivatives = new SimpleMatrix(
+                NeuralNetwork.getLossFunction().DerivativeMatrix(outputs, expectedOutputs) // [batchSize * neuronsCurrent]
+        );
+        SimpleMatrix newGradientsMatrix = lossDerivatives.elementMult(forwardedDerivatives);
+        UpdateGradients(newGradientsMatrix);
+
+        return newGradientsMatrix.getDDRM().get2DData();
     }
 
-    public void UpdateWeightsGradients(int neuron, double nextGradientValue) {
-        for (int feature = 0; feature < featuresNumber; feature++) {
-            weightsGradients[neuron][feature] += activations[feature] * nextGradientValue;
-        }
-    }
+    public double[][] BackPropagationBatch(Layer nextLayer, double[][] nextGradients) {
+        SimpleMatrix forwardedDerivatives = new SimpleMatrix(
+                activationFunction.DerivativeMatrix(linearInputs) // [batchSize * neuronsCurrent]
+        );
+        SimpleMatrix weightsMatrix= new SimpleMatrix(nextLayer.getWeights()); // [neuronsNext x neuronsCurrent]
+        SimpleMatrix nextGradientsMatrix = new SimpleMatrix(nextGradients); // [batchSize * neuronsNext]
+        SimpleMatrix newGradientsMatrix = nextGradientsMatrix.mult(weightsMatrix).elementMult(forwardedDerivatives); // [batchSize * neuronsCurrent]
+        UpdateGradients(newGradientsMatrix);
 
-    public double[] ComputeOutputGradients(double[] output, double[] expectedOutput) {
-        double[] derivativeLossOutput = new double[output.length];
-
-        for (int neuron = 0; neuron < neuronsNumber; neuron++) {
-            double dLoss = LossDerivative(output[neuron], expectedOutput[neuron]);
-            double forwardedDerivative = ForwardDerivative(linearInputs[neuron]);
-            derivativeLossOutput[neuron] = dLoss * forwardedDerivative;
-
-            UpdateWeightsGradients(neuron, derivativeLossOutput[neuron]);
-            biasesGradients[neuron] += derivativeLossOutput[neuron];
-        }
-        return derivativeLossOutput;
-    }
-
-    public double[] BackPropagation(Layer nextLayer, double[] nextGradient) {
-        double[] currentGradient = new double[neuronsNumber];
-
-        for (int neuron = 0; neuron < neuronsNumber; neuron++) {
-            currentGradient[neuron] = 0;
-            double forwardedDerivative = ForwardDerivative(linearInputs[neuron]);
-
-            for (int feature = 0; feature < nextGradient.length; feature++) {
-                double connectionWeight = nextLayer.getWeights()[feature][neuron];
-                currentGradient[neuron] += connectionWeight * nextGradient[feature];
-            }
-            currentGradient[neuron] *= forwardedDerivative;
-            UpdateWeightsGradients(neuron, currentGradient[neuron]);
-            biasesGradients[neuron] += currentGradient[neuron];
-        }
-        return currentGradient;
+        return newGradientsMatrix.getDDRM().get2DData();
     }
 
     public void UpdateWeights(double learningRate, int datasetSize) {

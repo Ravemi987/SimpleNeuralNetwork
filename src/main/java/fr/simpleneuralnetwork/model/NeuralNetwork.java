@@ -1,5 +1,7 @@
 package fr.simpleneuralnetwork.model;
 
+import fr.simpleneuralnetwork.model.Losses.CrossEntropy;
+import fr.simpleneuralnetwork.model.Losses.MeanSquaredError;
 import fr.simpleneuralnetwork.utils.MathsUtilities;
 
 import java.util.Arrays;
@@ -8,46 +10,90 @@ import java.util.Arrays;
 public class NeuralNetwork {
 
     private final Layer[] layers;
+    private static ILoss lossFunction;
 
-    public NeuralNetwork(int... layerSizes) {
+    public NeuralNetwork(String loss, String hiddenActivation, String outputActivation, int... layerSizes) {
         layers = new Layer[layerSizes.length - 1];
-        InitLayers(layerSizes);
+        ScanLossFunction(loss);
+        InitLayers(layerSizes, hiddenActivation, outputActivation);
     }
 
-    public void InitLayers(int[] layerSizes) {
+    public void ScanLossFunction(String loss) {
+        switch(loss) {
+            case "MeanSquaredError":
+              lossFunction = new MeanSquaredError();
+              break;
+            case "CrossEntropy":
+                lossFunction = new CrossEntropy();
+                break;
+            default:
+                System.err.println("Unknown loss function.");
+                System.exit(-1);
+        }
+    }
+
+    public void InitLayers(int[] layerSizes, String hiddenActivation, String outputActivation) {
         for (int i = 0; i < layers.length; i++) {
-            layers[i] = new Layer(layerSizes[i], layerSizes[i+1]);
+            if (i < layers.length - 1) {
+                layers[i] = new Layer(layerSizes[i], layerSizes[i + 1], hiddenActivation);
+            } else {
+                layers[i] = new Layer(layerSizes[i], layerSizes[i + 1], outputActivation);
+            }
         }
     }
 
     // Test
-    public NeuralNetwork(double[][][] initialWeights, double[][] initialBiases, int[] layerSizes) {
+    public NeuralNetwork(double[][][] initialWeights, double[][] initialBiases, int[] layerSizes,
+                         String loss, String hiddenActivation, String outputActivation) {
         layers = new Layer[layerSizes.length - 1];
+        ScanLossFunction(loss);
 
         for (int i = 0; i < layers.length; i++) {
-            layers[i] = new Layer(
-                    layerSizes[i],
-                    layerSizes[i + 1],
-                    initialWeights[i],
-                    initialBiases[i]
-            );
+            if (i < layers.length - 1) {
+                layers[i] = new Layer(
+                        layerSizes[i],
+                        layerSizes[i + 1],
+                        initialWeights[i],
+                        initialBiases[i],
+                        hiddenActivation
+                );
+            } else {
+                layers[i] = new Layer(
+                        layerSizes[i],
+                        layerSizes[i + 1],
+                        initialWeights[i],
+                        initialBiases[i],
+                        outputActivation
+                );
+            }
+
         }
     }
 
-    public double[] ForwardPropagation(double[] input) {
+    public double[] NNForwardPropagation(double[] input) {
+        double[][] activations = {input};
+
         for (Layer layer: layers) {
-            input = layer.ForwardPropagation(input);
+            activations = layer.ForwardPropagation(activations);
         }
-        return input;
+        return activations[0];
     }
 
-    public void BackPropagation(double[] input, double[] expectedOutput) {
-        double[] output = ForwardPropagation(input);
+    public double[][] NNForwardPropagationBatch(double[][] inputs) {
+        double[][] activations = inputs;
+
+        for (Layer layer: layers) {
+            activations = layer.ForwardPropagationBatch(activations);
+        }
+        return activations;
+    }
+
+    public void BackPropagation(double[][] outputs, double[][] expectedOutputs) {
         Layer outputLayer = layers[layers.length - 1];
-        double[] computedOutputGradients = outputLayer.ComputeOutputGradients(output, expectedOutput);
+        double[][] computedOutputGradients = outputLayer.ComputeOutputGradientsBatch(outputs, expectedOutputs);
 
         for (int layer = layers.length - 2; layer >= 0; layer--) {
-            computedOutputGradients = layers[layer].BackPropagation(layers[layer + 1], computedOutputGradients);
+            computedOutputGradients = layers[layer].BackPropagationBatch(layers[layer + 1], computedOutputGradients);
         }
     }
 
@@ -57,15 +103,44 @@ public class NeuralNetwork {
         }
     }
 
-    public void BatchGradientDescent(double[][] trainInputs, double[][] expectedOutputs, double learningRate) {
-        for (int input = 0; input < trainInputs.length; input++) {
-            BackPropagation(trainInputs[input], expectedOutputs[input]);
-        }
-        UpdateAllWeights(learningRate, trainInputs.length);
+    public void BatchGradientDescent(double[][] trainInputs, double[][] expectedOutputs,
+                                     double learningRate, int batchSize) {
+        int totalSize = trainInputs.length;
+        int batchesNumber = (int) Math.ceil((double) totalSize / batchSize);
+        double totalLoss = 0;
+        int totalCorrect = 0;
 
-//        System.out.print("Loss " + " " + GlobalLoss(trainInputs, expectedOutputs) + " ");
-        //DisplayTrainAccuracy(trainInputs, expectedOutputs);
-        //System.out.print("\n");
+        for (int batch = 0; batch < batchesNumber; batch++) {
+            int start = batch * batchSize;
+            int end = Math.min(start + batchSize, totalSize);
+
+            double[][] batchInputs = Arrays.copyOfRange(trainInputs, start, end);
+            double[][] batchOutputs = Arrays.copyOfRange(expectedOutputs, start, end);
+            double[][] outputs = NNForwardPropagationBatch(batchInputs);
+
+            BackPropagation(outputs, batchOutputs);
+
+            totalLoss += lossFunction.GlobalLoss(outputs, batchOutputs);
+            totalCorrect += GetCorrectPredictions(outputs, batchOutputs);
+
+            UpdateAllWeights(learningRate, batchSize);
+        }
+
+        double averageLoss = totalLoss / batchSize;
+        double accuracy = (totalCorrect / (double) totalSize) * 100;
+        System.out.printf("Loss: %.6f - Accuracy: %.2f%%%n", averageLoss, accuracy);
+    }
+
+    public void Train(double[][] trainInputs, double[] expectedOutput, double learningRate,
+                      double iterationsNumber, int batchSize, double decay) {
+        double[][] expectedOutputs = OneHotEncoder(expectedOutput, trainInputs[0].length);
+        double initialLr = learningRate;
+
+        for (int epoch = 0; epoch <= iterationsNumber; epoch++) {
+            System.out.print("Epoch " + epoch + " - ");
+            BatchGradientDescent(trainInputs, expectedOutputs, learningRate, batchSize);
+            learningRate = initialLr / (1 + decay * epoch);
+        }
     }
 
     public double[][] OneHotEncoder(double[] expectedOutput, int numClasses) {
@@ -80,42 +155,47 @@ public class NeuralNetwork {
         return encodedOutputs;
     }
 
-    public void Train(double[][] trainInputs, double[] expectedOutput, double learningRate,
-                      double iterationsNumber, double decay) {
-        double[][] expectedOutputs = OneHotEncoder(expectedOutput, trainInputs[0].length);
-//        DisplayExpectedOutputs(expectedOutput);
-//        DisplayEncodedExpectedOutputs(expectedOutputs);
+    public int GetCorrectPredictions(double[][] predictions, double[][] expectedOutputs) {
+        int correct = 0;
+        for (int i = 0; i < predictions.length; i++) {
+            int predictedClass = MathsUtilities.IndexMaxOfArray(predictions[i]);
+            int expectedClass = MathsUtilities.IndexMaxOfArray(expectedOutputs[i]);
 
-        for (int epoch = 0; epoch <= iterationsNumber; epoch++) {
-            BatchGradientDescent(trainInputs, expectedOutputs, learningRate);
-            System.out.println(epoch);
-            //learningRate = learningRate / (1 + decay * epoch);
+            if (predictedClass == expectedClass ) {
+                correct++;
+            }
         }
-
-//        System.out.print("Loss " + " " + GlobalLoss(trainInputs, expectedOutputs) + " ");
-//        DisplayTrainAccuracy(trainInputs, expectedOutputs);
-//        System.out.print("\n");
+        return correct;
     }
 
     public double[] Predict(double[] testInput) {
-        return ForwardPropagation(testInput);
+        return NNForwardPropagation(testInput);
     }
 
-    public double[][] PredictProba(double[][] testInputs) {
+    public double[][] PredictAll(double[][] testInputs) {
         double[][] predictions = new double[testInputs.length][];
 
         for (int i = 0; i < predictions.length; i++) {
-            predictions[i] = ForwardPropagation(testInputs[i]);
+            predictions[i] = NNForwardPropagation(testInputs[i]);
         }
 
         return predictions;
     }
 
-    public double[] PredictClasses(double[][] testInputs) {
+    public double PredictClass(double[] testInput) {
+        double[] outputs = NNForwardPropagation(testInput);
+        if (outputs.length == 1) {
+            return outputs[0] >= 0.5 ? 0.0 : 1.0;
+        } else {
+            return MathsUtilities.IndexMaxOfArray(outputs);
+        }
+    }
+
+    public double[] PredictAllClasses(double[][] testInputs) {
         double[] predictions = new double[testInputs.length];
 
         for (int i = 0; i < predictions.length; i++) {
-            double[] outputs = ForwardPropagation(testInputs[i]);
+            double[] outputs = NNForwardPropagation(testInputs[i]);
 
             if (outputs.length == 1) {
                 predictions[i] = outputs[0] >= 0.5 ? 0.0 : 1.0;
@@ -127,38 +207,11 @@ public class NeuralNetwork {
         return predictions;
     }
 
-    public double GetAccuracy(double[] predictions, double[][] testLabels) {
-        int correct = 0;
-        for (int i = 0; i < predictions.length; i++) {
-            if (predictions[i] == MathsUtilities.IndexMaxOfArray(testLabels[i])) {
-                correct++;
-            }
-        }
-        return (double) correct / predictions.length;
-    }
-
-    public static double ActivationFunction(double z) {
-        return MathsUtilities.Sigmoid(z);
-    }
-
-    public static double ActivationDerivative(double z) {
-        return MathsUtilities.SigmoidDerivative(z);
+    public static ILoss getLossFunction() {
+        return lossFunction;
     }
 
     // ***************** HELPERS *****************
-
-    public void DisplayExpectedOutputs(double[] expectedOutput) {
-        System.out.println("Expected outputs: ");
-        System.out.println(Arrays.toString(expectedOutput));
-    }
-
-    public void DisplayEncodedExpectedOutputs(double[][] expectedOutputs) {
-        System.out.println("Encoded expected outputs: ");
-
-        for (double[] output: expectedOutputs) {
-            System.out.println(Arrays.toString(output));
-        }
-    }
 
     public void DisplayPredictions(double[][] predictions) {
         for (int i = 0; i < predictions.length; i++) {
@@ -166,35 +219,12 @@ public class NeuralNetwork {
         }
     }
 
-    public void DisplayTrainAccuracy(double[][] inputs, double[][] expectedOutputs) {
-        System.out.print("accuracy: " + GetAccuracy(PredictClasses(inputs), expectedOutputs));
-    }
-
     public void DisplayTestAccuracy(double[][] inputs, double[] expectedOutput) {
         double[][] expectedOutputs = OneHotEncoder(expectedOutput, inputs[0].length);
-        System.out.println("accuracy: " + GetAccuracy(PredictClasses(inputs), expectedOutputs));
-    }
-
-    public double Loss(double[] input, double[] expectedOutputs) {
-        double error = 0;
-        double[] outputs = ForwardPropagation(input);
-        Layer outputLayer = layers[layers.length - 1];
-
-        for (int numOutput = 0; numOutput < outputs.length; numOutput++) {
-            error += outputLayer.NeuronLoss(outputs[numOutput], expectedOutputs[numOutput]);
-        }
-
-        return error;
-    }
-
-    public double GlobalLoss(double[][] inputs, double[][] expectedOutputs) {
-        double totalError = 0;
-
-        for (int i = 0; i < inputs.length; i++) {
-            totalError += Loss(inputs[i], expectedOutputs[i]);
-        }
-
-        return (1.0 / inputs.length) * totalError;
+        double[][] predictions = OneHotEncoder(PredictAllClasses(inputs), inputs[0].length);
+        int correct = GetCorrectPredictions(predictions, expectedOutputs);
+        System.out.println("\u001B[32m" + "Accuracy: " + correct / (double) expectedOutput.length
+                + " (" + correct + "/" + expectedOutput.length + ")" + "\u001B[0m");
     }
 
     public int getWeightsNumber() {

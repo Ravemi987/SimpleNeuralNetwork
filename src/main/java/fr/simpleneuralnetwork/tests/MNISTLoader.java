@@ -5,6 +5,7 @@ import fr.simpleneuralnetwork.model.NeuralNetwork;
 import java.io.BufferedInputStream;
 import java.io.FileInputStream;
 import java.io.IOException;
+import java.util.Arrays;
 
 public class MNISTLoader {
 
@@ -117,7 +118,7 @@ public class MNISTLoader {
         int[] headerInfos = readImagesHeader(filePath);
 
         if (headerInfos != null)
-            return readImages(filePath, 1000, headerInfos[2], headerInfos[3]);
+            return readImages(filePath, headerInfos[1], headerInfos[2], headerInfos[3]);
         return null;
     }
 
@@ -126,7 +127,7 @@ public class MNISTLoader {
         int[] headerInfos = readLabelsHeader(filePath);
 
         if (headerInfos != null)
-            return readLabels(filePath, 1000);
+            return readLabels(filePath, headerInfos[1]);
         return null;
     }
 
@@ -135,7 +136,7 @@ public class MNISTLoader {
         int[] headerInfos = readImagesHeader(filePath);
 
         if (headerInfos != null)
-            return readImages(filePath, 1000, headerInfos[2], headerInfos[3]);
+            return readImages(filePath, headerInfos[1], headerInfos[2], headerInfos[3]);
         return null;
     }
 
@@ -144,7 +145,7 @@ public class MNISTLoader {
         int[] headerInfos = readLabelsHeader(filePath);
 
         if (headerInfos != null)
-            return readLabels(filePath, 1000);
+            return readLabels(filePath, headerInfos[1]);
         return null;
     }
 
@@ -175,12 +176,20 @@ public class MNISTLoader {
         System.out.println("trainLabels: length=" + trainLabels.length);
         System.out.println("testLabels: length=" + testLabels.length);
 
-        DisplayImage(trainData[0]);
-
         int[] layerSizes = new int[]{784, 128, 64, 10};
 
-        NeuralNetwork nn = new NeuralNetwork(layerSizes);
-        nn.Train(trainData, trainLabels, 1, 100, 1.0E-10);
+        NeuralNetwork nn = new NeuralNetwork("CrossEntropy", "Sigmoid", "Softmax", layerSizes);
+        nn.Train(trainData, trainLabels, 1, 10, 64, 1E-7);
+
+        double[] predictions = nn.PredictAllClasses(testData);
+
+        for (int i = 0; i < predictions.length; i++) {
+            if (predictions[i] != testLabels[i]) {
+                DisplayImage(testData[i]);
+                System.out.println("\u001B[31m" + "Prediction incorrect: " + predictions[i] + ". Attendu: " + testLabels[i] + "\u001B[0m");
+                System.out.println("-------------------------------------------------------");
+            }
+        }
         nn.DisplayTestAccuracy(testData, testLabels);
     }
 }
