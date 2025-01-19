@@ -41,6 +41,17 @@ public class Layer {
         InitWeights();
     }
 
+    public Layer(double[][] initialWeights, double[] initialBiases, int nbFeatures, int nbNeurons, String activationFun) {
+        this.featuresNumber = nbFeatures;
+        this.neuronsNumber = nbNeurons;
+        this.weights = initialWeights;
+        this.biases = initialBiases;
+        ScanActivationFunction(activationFun);
+
+        weightsGradients = new double[neuronsNumber][featuresNumber];
+        biasesGradients = new double[neuronsNumber];
+    }
+
     public void ScanActivationFunction(String activationFun) {
         switch(activationFun) {
             case "Sigmoid":
@@ -53,18 +64,6 @@ public class Layer {
                 System.err.println("Unknown loss function.");
                 System.exit(-1);
         }
-    }
-
-    // Test
-    public Layer(int nbFeatures, int nbNeurons, double[][] initialWeights, double[] initialBiases, String activationFun) {
-        this.featuresNumber = nbFeatures;
-        this.neuronsNumber = nbNeurons;
-        this.weights = initialWeights;
-        this.biases = initialBiases;
-        ScanActivationFunction(activationFun);
-
-        weightsGradients = new double[neuronsNumber][featuresNumber];
-        biasesGradients = new double[neuronsNumber];
     }
 
     public double[][] getWeights() {
