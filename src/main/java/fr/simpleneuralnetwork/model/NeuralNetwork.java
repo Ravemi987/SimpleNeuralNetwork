@@ -126,7 +126,7 @@ public class NeuralNetwork {
             UpdateAllWeights(learningRate, batchSize);
         }
 
-        double averageLoss = totalLoss / batchesNumber;
+        double averageLoss = totalLoss / batchSize;
         double accuracy = (totalCorrect / (double) totalSize) * 100;
         System.out.printf("Loss: %.6f - Accuracy: %.2f%%%n", averageLoss, accuracy);
     }
@@ -219,21 +219,12 @@ public class NeuralNetwork {
         }
     }
 
-    public void DisplayPredictionsWithColors(double[] predictions, double[] expectedOutputs) {
-        for (int i = 0; i < predictions.length; i++) {
-
-            if (predictions[i] == expectedOutputs[i]) {
-                System.out.println("\u001B[32m" + "Prediction correct: " + predictions[i] + " == " + expectedOutputs[i] + "\u001B[0m");
-            } else {
-                System.out.println("\u001B[31m" + "Prediction incorrect: " + predictions[i] + " != " + expectedOutputs[i] + "\u001B[0m");
-            }
-        }
-    }
-
     public void DisplayTestAccuracy(double[][] inputs, double[] expectedOutput) {
         double[][] expectedOutputs = OneHotEncoder(expectedOutput, inputs[0].length);
         double[][] predictions = OneHotEncoder(PredictAllClasses(inputs), inputs[0].length);
-        System.out.println("Accuracy: " + GetCorrectPredictions(predictions, expectedOutputs) / (double) expectedOutput.length);
+        int correct = GetCorrectPredictions(predictions, expectedOutputs);
+        System.out.println("\u001B[32m" + "Accuracy: " + correct / (double) expectedOutput.length
+                + " (" + correct + "/" + expectedOutput.length + ")" + "\u001B[0m");
     }
 
     public int getWeightsNumber() {
