@@ -8,6 +8,7 @@ public interface ILoss {
     double Derivative(double output, double expectedOutput);
     double Loss(double[] output, double[] expectedOutputs);
     double GlobalLoss(double[][] outputs, double[][] expectedOutputs);
+    String GetName();
 
     default double[][] DerivativeMatrix(double[][] output, double[][] expectedOutput) {
         int rows = output.length;

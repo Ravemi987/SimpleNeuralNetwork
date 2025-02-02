@@ -14,4 +14,9 @@ public class SiLU implements IActivation {
         double exp = Math.exp(-z);
         return (1.0 + exp + z * exp) / ((1 + exp)*(1 + exp));
     }
+
+    @Override
+    public String GetName() {
+        return "silu";
+    }
 }

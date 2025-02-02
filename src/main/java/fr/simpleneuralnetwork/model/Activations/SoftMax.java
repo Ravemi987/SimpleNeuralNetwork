@@ -3,7 +3,6 @@ package fr.simpleneuralnetwork.model.Activations;
 import fr.simpleneuralnetwork.model.IActivation;
 
 import java.util.Arrays;
-import java.util.stream.IntStream;
 
 public class SoftMax implements IActivation {
 
@@ -69,5 +68,10 @@ public class SoftMax implements IActivation {
         }
 
         return  result;
+    }
+
+    @Override
+    public String GetName() {
+        return "softmax";
     }
 }

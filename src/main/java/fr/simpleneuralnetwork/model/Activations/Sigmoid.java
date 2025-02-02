@@ -2,8 +2,6 @@ package fr.simpleneuralnetwork.model.Activations;
 
 import fr.simpleneuralnetwork.model.IActivation;
 
-import java.util.stream.IntStream;
-
 public class Sigmoid implements IActivation {
 
     @Override
@@ -15,5 +13,10 @@ public class Sigmoid implements IActivation {
     public double Derivative(double z) {
         double sigmoid = Apply(z);
         return sigmoid * (1 - sigmoid);
+    }
+
+    @Override
+    public String GetName() {
+        return "sigmoid";
     }
 }

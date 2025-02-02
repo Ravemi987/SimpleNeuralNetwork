@@ -6,6 +6,7 @@ public interface IActivation {
 
     double Apply(double z);
     double Derivative(double z);
+    String GetName();
 
     default double[][] ApplyMatrix(double[][] input) {
         int rows = input.length;

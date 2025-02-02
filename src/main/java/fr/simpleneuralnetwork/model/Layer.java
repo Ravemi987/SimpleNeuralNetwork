@@ -4,10 +4,7 @@ import fr.simpleneuralnetwork.model.Activations.ReLU;
 import fr.simpleneuralnetwork.model.Activations.SiLU;
 import fr.simpleneuralnetwork.model.Activations.Sigmoid;
 import fr.simpleneuralnetwork.model.Activations.SoftMax;
-import fr.simpleneuralnetwork.model.Losses.CrossEntropy;
-import fr.simpleneuralnetwork.model.Losses.MeanSquaredError;
 import org.ejml.simple.SimpleMatrix;
-import fr.simpleneuralnetwork.utils.MathsUtilities;
 
 import java.util.Arrays;
 import java.util.Random;
@@ -56,16 +53,16 @@ public class Layer {
 
     public void ScanActivationFunction(String activationFun) {
         switch(activationFun) {
-            case "Sigmoid":
+            case "sigmoid":
                 activationFunction = new Sigmoid();
                 break;
-            case "Relu":
+            case "relu":
                 activationFunction = new ReLU();
                 break;
-            case "Silu":
+            case "silu":
                 activationFunction = new SiLU();
                 break;
-            case "Softmax":
+            case "softmax":
                 activationFunction = new SoftMax();
                 break;
             default:

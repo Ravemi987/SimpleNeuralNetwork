@@ -36,4 +36,9 @@ public class MeanSquaredError implements ILoss {
 
         return totalError / outputs.length;
     }
+
+    @Override
+    public String GetName() {
+        return "mean_squared_error";
+    }
 }

@@ -40,4 +40,9 @@ public class CrossEntropy implements ILoss {
 
         return totalError;
     }
+
+    @Override
+    public String GetName() {
+        return "cross_entropy";
+    }
 }

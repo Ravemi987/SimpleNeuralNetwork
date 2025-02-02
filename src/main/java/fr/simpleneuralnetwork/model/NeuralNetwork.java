@@ -4,6 +4,7 @@ import fr.simpleneuralnetwork.model.Losses.CrossEntropy;
 import fr.simpleneuralnetwork.model.Losses.MeanSquaredError;
 import fr.simpleneuralnetwork.utils.MathsUtilities;
 
+import java.io.*;
 import java.util.Arrays;
 
 
@@ -11,8 +12,17 @@ public class NeuralNetwork {
 
     private final Layer[] layers;
     private static ILoss lossFunction;
+    private int[] layerSizes;
+    private String loss;
+    private String hiddenActivation;
+    private String outputActivation;
 
     public NeuralNetwork(int[] layerSizes, String loss, String hiddenActivation, String outputActivation) {
+        this.layerSizes = layerSizes;
+        this.loss = loss;
+        this.hiddenActivation = hiddenActivation;
+        this.outputActivation = outputActivation;
+
         layers = new Layer[layerSizes.length - 1];
         ScanLossFunction(loss);
         InitLayers(layerSizes, hiddenActivation, outputActivation);
@@ -20,6 +30,11 @@ public class NeuralNetwork {
 
     public NeuralNetwork(double[][][] initialWeights, double[][] initialBiases, int[] layerSizes,
                          String loss, String hiddenActivation, String outputActivation) {
+        this.layerSizes = layerSizes;
+        this.loss = loss;
+        this.hiddenActivation = hiddenActivation;
+        this.outputActivation = outputActivation;
+
         layers = new Layer[layerSizes.length - 1];
         ScanLossFunction(loss);
         InitLayers(initialWeights, initialBiases, layerSizes, hiddenActivation, outputActivation);
@@ -27,16 +42,36 @@ public class NeuralNetwork {
 
     public void ScanLossFunction(String loss) {
         switch(loss) {
-            case "MeanSquaredError":
+            case "mean_squared_error":
                 lossFunction = new MeanSquaredError();
                 break;
-            case "CrossEntropy":
+            case "cross_entropy":
                 lossFunction = new CrossEntropy();
                 break;
             default:
                 System.err.println("Unknown loss function.");
                 System.exit(-1);
         }
+    }
+
+    public int[] getLayerSizes() {
+        return layerSizes;
+    }
+
+    public String getLoss() {
+        return loss;
+    }
+
+    public String getHiddenActivation() {
+        return hiddenActivation;
+    }
+
+    public String getOutputActivation() {
+        return outputActivation;
+    }
+
+    public static ILoss getLossFunction() {
+        return lossFunction;
     }
 
     public void InitLayers(double[][][] initialWeights, double[][] initialBiases,
@@ -199,12 +234,6 @@ public class NeuralNetwork {
         return predictions;
     }
 
-    public static ILoss getLossFunction() {
-        return lossFunction;
-    }
-
-    // ***************** HELPERS *****************
-
     public void DisplayPredictions(double[][] predictions) {
         for (int i = 0; i < predictions.length; i++) {
             System.out.println(i + "    " + Arrays.toString(predictions[i]));
@@ -245,5 +274,72 @@ public class NeuralNetwork {
         }
 
         return allWeights;
+    }
+
+    public void WriteInFile(String filePath) {
+        try (BufferedWriter writer = new BufferedWriter(new FileWriter(filePath))) {
+            writer.write(getLoss());
+            writer.newLine();
+
+            writer.write(getHiddenActivation());
+            writer.newLine();
+            writer.write(getOutputActivation());
+            writer.newLine();
+
+            int[] layerSizes = getLayerSizes();
+            for (int size : layerSizes) {
+                writer.write(size + " ");
+            }
+            writer.newLine();
+
+            double[] allWeights = GetAllWeights();
+            for (double weight : allWeights) {
+                writer.write(weight + " ");
+            }
+            writer.newLine();
+
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+    }
+
+    public static NeuralNetwork LoadFromFile(String filePath) {
+        try (BufferedReader reader = new BufferedReader(new FileReader(filePath))) {
+            String loss = reader.readLine();
+            String hiddenActivation = reader.readLine();
+            String outputActivation = reader.readLine();
+
+            String[] layerSizesStr = reader.readLine().split(" ");
+            int[] layerSizes = Arrays.stream(layerSizesStr).mapToInt(Integer::parseInt).toArray();
+
+            String[] weightsStr = reader.readLine().split(" ");
+            double[] allWeights = Arrays.stream(weightsStr).mapToDouble(Double::parseDouble).toArray();
+
+            double[][][] weights = new double[layerSizes.length - 1][][];
+            double[][] biases = new double[layerSizes.length - 1][];
+
+            int index = 0;
+            for (int l = 0; l < layerSizes.length - 1; l++) {
+                int nbNeurons = layerSizes[l + 1];
+                int nbFeatures = layerSizes[l];
+
+                weights[l] = new double[nbNeurons][nbFeatures];
+                biases[l] = new double[nbNeurons];
+
+                for (int neuron = 0; neuron < nbNeurons; neuron++) {
+                    for (int feature = 0; feature < nbFeatures; feature++) {
+                        weights[l][neuron][feature] = allWeights[index++];
+                    }
+                    biases[l][neuron] = allWeights[index++];
+                }
+            }
+
+            return new NeuralNetwork(weights, biases, layerSizes, loss, hiddenActivation, outputActivation);
+
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+
+        return null;
     }
 }
