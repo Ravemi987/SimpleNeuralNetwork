@@ -25,11 +25,6 @@ public interface IActivation {
         int cols = input[0].length;
         double[][] result = new double[rows][cols];
 
-//        IntStream.range(0, rows).parallel().forEach(i -> {
-//            for (int j = 0; j < cols; j++) {
-//                result[i][j] = Derivative(input[i][j]);
-//            }
-//        });
         for (int i = 0; i < rows; i++) {
             for (int j = 0; j < cols; j++) {
                 result[i][j] = Derivative(input[i][j]);

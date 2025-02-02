@@ -176,10 +176,10 @@ public class MNISTLoader {
         System.out.println("trainLabels: length=" + trainLabels.length);
         System.out.println("testLabels: length=" + testLabels.length);
 
-        int[] layerSizes = new int[]{784, 128, 64, 10};
+        int[] layerSizes = new int[]{784, 100, 10};
 
-        NeuralNetwork nn = new NeuralNetwork(layerSizes, "CrossEntropy", "Relu", "Softmax");
-        nn.Train(trainData, trainLabels, 0.01, 10, 100, 1E-7);
+        NeuralNetwork nn = new NeuralNetwork(layerSizes, "CrossEntropy", "Silu", "Softmax");
+        nn.Train(trainData, trainLabels, 1, 10, 100, 1E-9);
 
         double[] predictions = nn.PredictAllClasses(testData);
 

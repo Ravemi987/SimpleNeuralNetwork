@@ -18,7 +18,7 @@ public class SoftMax implements IActivation {
     }
 
     private double[] ApplyArr(double[] z) {
-        double max = Arrays.stream(z).max().orElse(0.0);
+        double max = Arrays.stream(z).max().orElse(0.01);
         double sum = 0;
         double[] res = new double[z.length];
 

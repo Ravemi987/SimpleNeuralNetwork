@@ -2,18 +2,16 @@ package fr.simpleneuralnetwork.model.Activations;
 
 import fr.simpleneuralnetwork.model.IActivation;
 
-import java.util.stream.IntStream;
-
-public class Sigmoid implements IActivation {
+public class SiLU implements IActivation {
 
     @Override
     public double Apply(double z) {
-        return 1.0 / (1.0 + Math.exp(-z));
+        return z / (1.0 + Math.exp(-z));
     }
 
     @Override
     public double Derivative(double z) {
-        double sigmoid = Apply(z);
-        return sigmoid * (1 - sigmoid);
+        double exp = Math.exp(-z);
+        return (1.0 + exp + z * exp) / ((1 + exp)*(1 + exp));
     }
 }
