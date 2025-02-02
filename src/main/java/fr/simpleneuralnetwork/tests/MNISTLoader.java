@@ -195,7 +195,5 @@ public class MNISTLoader {
 //            }
 //        }
         nn.DisplayTestAccuracy(testData, testLabels);
-
-
     }
 }

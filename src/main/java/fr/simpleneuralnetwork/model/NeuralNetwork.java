@@ -12,10 +12,10 @@ public class NeuralNetwork {
 
     private final Layer[] layers;
     private static ILoss lossFunction;
-    private int[] layerSizes;
-    private String loss;
-    private String hiddenActivation;
-    private String outputActivation;
+    private final int[] layerSizes;
+    private final String loss;
+    private final String hiddenActivation;
+    private final String outputActivation;
 
     public NeuralNetwork(int[] layerSizes, String loss, String hiddenActivation, String outputActivation) {
         this.layerSizes = layerSizes;
