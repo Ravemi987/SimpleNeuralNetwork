@@ -1,5 +1,6 @@
 package fr.simpleneuralnetwork.model;
 
+import fr.simpleneuralnetwork.model.Activations.ReLU;
 import fr.simpleneuralnetwork.model.Activations.Sigmoid;
 import fr.simpleneuralnetwork.model.Activations.SoftMax;
 import fr.simpleneuralnetwork.model.Losses.CrossEntropy;
@@ -57,11 +58,14 @@ public class Layer {
             case "Sigmoid":
                 activationFunction = new Sigmoid();
                 break;
+            case "Relu":
+                activationFunction = new ReLU();
+                break;
             case "Softmax":
                 activationFunction = new SoftMax();
                 break;
             default:
-                System.err.println("Unknown loss function.");
+                System.err.println("Unknown activation function.");
                 System.exit(-1);
         }
     }
@@ -131,6 +135,7 @@ public class Layer {
                 weights[neuron][feature] = rand.nextDouble() * 2 - 1;
             }
         }
+        System.out.println("Init weights");
     }
 
     public void UpdateGradients(SimpleMatrix newGradientsMatrix) {

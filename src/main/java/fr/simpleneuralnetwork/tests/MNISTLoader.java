@@ -178,18 +178,18 @@ public class MNISTLoader {
 
         int[] layerSizes = new int[]{784, 128, 64, 10};
 
-        NeuralNetwork nn = new NeuralNetwork(layerSizes, "CrossEntropy", "Sigmoid", "Softmax");
-        nn.Train(trainData, trainLabels, 1, 10, 64, 1E-7);
+        NeuralNetwork nn = new NeuralNetwork(layerSizes, "CrossEntropy", "Relu", "Softmax");
+        nn.Train(trainData, trainLabels, 0.01, 10, 100, 1E-7);
 
         double[] predictions = nn.PredictAllClasses(testData);
 
-        for (int i = 0; i < predictions.length; i++) {
-            if (predictions[i] != testLabels[i]) {
-                DisplayImage(testData[i]);
-                System.out.println("\u001B[31m" + "Prediction incorrect: " + predictions[i] + ". Attendue: " + testLabels[i] + "\u001B[0m");
-                System.out.println("-------------------------------------------------------");
-            }
-        }
+//        for (int i = 0; i < predictions.length; i++) {
+//            if (predictions[i] != testLabels[i]) {
+//                DisplayImage(testData[i]);
+//                System.out.println("\u001B[31m" + "Prediction incorrect: " + predictions[i] + ". Attendue: " + testLabels[i] + "\u001B[0m");
+//                System.out.println("-------------------------------------------------------");
+//            }
+//        }
         nn.DisplayTestAccuracy(testData, testLabels);
     }
 }

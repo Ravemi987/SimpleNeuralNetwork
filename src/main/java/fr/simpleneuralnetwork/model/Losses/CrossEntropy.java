@@ -4,7 +4,7 @@ import fr.simpleneuralnetwork.model.ILoss;
 
 public class CrossEntropy implements ILoss {
 
-    private static final double EPSILON = 1E-100;
+    private static final double EPSILON = 1E-9;
 
     @Override
     public double Apply(double output, double expectedOutput) {

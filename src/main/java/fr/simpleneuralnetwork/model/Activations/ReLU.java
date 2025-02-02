@@ -4,16 +4,16 @@ import fr.simpleneuralnetwork.model.IActivation;
 
 import java.util.stream.IntStream;
 
-public class Sigmoid implements IActivation {
+public class ReLU implements IActivation {
+    private final double alpha = 0.01;
 
     @Override
     public double Apply(double z) {
-        return 1.0 / (1.0 + Math.exp(-1 * z));
+        return z > 0 ? z : alpha * z;
     }
 
     @Override
     public double Derivative(double z) {
-        double sigmoid = Apply(z);
-        return sigmoid * (1 - sigmoid);
+        return z > 0 ? 1 : alpha;
     }
 }

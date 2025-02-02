@@ -1,5 +1,7 @@
 package fr.simpleneuralnetwork.model;
 
+import java.util.stream.IntStream;
+
 public interface ILoss {
 
     double Apply(double output, double expectedOutput);
@@ -12,11 +14,12 @@ public interface ILoss {
         int cols = output[0].length;
         double[][] result = new double[rows][cols];
 
-        for (int i = 0; i < rows; i++) {
+        for (int i = 0; i < rows ; i++) {
             for (int j = 0; j < cols; j++) {
                 result[i][j] = Derivative(output[i][j], expectedOutput[i][j]);
             }
         }
+
         return result;
     }
 }

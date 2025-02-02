@@ -2,14 +2,28 @@ package fr.simpleneuralnetwork.model.Activations;
 
 import fr.simpleneuralnetwork.model.IActivation;
 
+import java.util.Arrays;
+import java.util.stream.IntStream;
+
 public class SoftMax implements IActivation {
 
-    private double[] Apply(double[] z) {
+    @Override
+    public double Apply(double z) {
+        return 0;
+    }
+
+    @Override
+    public double Derivative(double z) {
+        return 0;
+    }
+
+    private double[] ApplyArr(double[] z) {
+        double max = Arrays.stream(z).max().orElse(0.0);
         double sum = 0;
         double[] res = new double[z.length];
 
         for (int i = 0; i < z.length; i++) {
-            res[i] = Math.exp(z[i]);
+            res[i] = Math.exp(z[i] - max);
             sum += res[i];
         }
 
@@ -20,8 +34,8 @@ public class SoftMax implements IActivation {
         return res;
     }
 
-    private double[] Derivative(double[] z) {
-        double[] softmax = Apply(z);
+    private double[] DerivativeArr(double[] z) {
+        double[] softmax = ApplyArr(z);
         double[] res = new double[z.length];
 
         for (int i = 0; i < z.length; i++) {
@@ -38,7 +52,7 @@ public class SoftMax implements IActivation {
         double[][] result = new double[rows][cols];
 
         for (int i = 0; i < rows; i++) {
-            result[i] = Apply(input[i]);
+            result[i] = ApplyArr(input[i]);
         }
 
         return result;
@@ -51,7 +65,7 @@ public class SoftMax implements IActivation {
         double[][] result = new double[rows][cols];
 
         for (int i = 0; i < rows; i++) {
-            result[i] = Derivative(input[i]);
+            result[i] = DerivativeArr(input[i]);
         }
 
         return  result;
