@@ -178,22 +178,22 @@ public class MNISTLoader {
 
         int[] layerSizes = new int[]{784, 100, 10};
 
-        NeuralNetwork nn = new NeuralNetwork(layerSizes, "cross_entropy", "sigmoid", "softmax");
+/*        NeuralNetwork nn = new NeuralNetwork(layerSizes, "cross_entropy", "sigmoid", "softmax");
         nn.Train(trainData, trainLabels, 1, 10, 64, 1E-7);
-        nn.WriteInFile("src/main/resources/model1.txt");
+        nn.WriteInFile("src/main/resources/model1.txt");*/
 
-/*        NeuralNetwork nn = NeuralNetwork.LoadFromFile("src/main/resources/model1.txt");
-        assert nn != null;*/
+        NeuralNetwork nn = NeuralNetwork.LoadFromFile("src/main/resources/model1.txt");
+        assert nn != null;
 
-        //double[] predictions = nn.PredictAllClasses(testData);
+        double[] predictions = nn.PredictAllClasses(testData);
 
-//        for (int i = 0; i < predictions.length; i++) {
-//            if (predictions[i] != testLabels[i]) {
-//                DisplayImage(testData[i]);
-//                System.out.println("\u001B[31m" + "Prediction incorrect: " + predictions[i] + ". Attendue: " + testLabels[i] + "\u001B[0m");
-//                System.out.println("-------------------------------------------------------");
-//            }
-//        }
-        //nn.DisplayTestAccuracy(testData, testLabels);
+        for (int i = 0; i < predictions.length; i++) {
+            if (predictions[i] != testLabels[i]) {
+                DisplayImage(testData[i]);
+                System.out.println("\u001B[31m" + "Prediction incorrect: " + predictions[i] + ". Attendue: " + testLabels[i] + "\u001B[0m");
+                System.out.println("-------------------------------------------------------");
+            }
+        }
+        nn.DisplayTestAccuracy(testData, testLabels);
     }
 }
