@@ -178,14 +178,14 @@ public class MNISTLoader {
 
         int[] layerSizes = new int[]{784, 100, 10};
 
-//        NeuralNetwork nn = new NeuralNetwork(layerSizes, "cross_entropy", "sigmoid", "softmax");
-//        nn.Train(trainData, trainLabels, 1, 10, 64, 1E-7);
-//        nn.WriteInFile("src/main/resources/model1.txt");
+        NeuralNetwork nn = new NeuralNetwork(layerSizes, "cross_entropy", "sigmoid", "softmax");
+        nn.Train(trainData, trainLabels, 1, 10, 64, 1E-7);
+        nn.WriteInFile("src/main/resources/model1.txt");
 
-        NeuralNetwork nn = NeuralNetwork.LoadFromFile("src/main/resources/model1.txt");
-        assert nn != null;
+/*        NeuralNetwork nn = NeuralNetwork.LoadFromFile("src/main/resources/model1.txt");
+        assert nn != null;*/
 
-        double[] predictions = nn.PredictAllClasses(testData);
+        //double[] predictions = nn.PredictAllClasses(testData);
 
 //        for (int i = 0; i < predictions.length; i++) {
 //            if (predictions[i] != testLabels[i]) {
@@ -194,6 +194,6 @@ public class MNISTLoader {
 //                System.out.println("-------------------------------------------------------");
 //            }
 //        }
-        nn.DisplayTestAccuracy(testData, testLabels);
+        //nn.DisplayTestAccuracy(testData, testLabels);
     }
 }
